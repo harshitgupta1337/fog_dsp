@@ -152,7 +152,6 @@ public class Vm {
 	 */
 	public List<Double> getCurrentRequestedMips() {
 		List<Double> currentRequestedMips = getCloudletScheduler().getCurrentRequestedMips();
-		System.out.println(currentRequestedMips);
 		if (isBeingInstantiated()) {
 			currentRequestedMips = new ArrayList<Double>();
 			for (int i = 0; i < getNumberOfPes(); i++) {

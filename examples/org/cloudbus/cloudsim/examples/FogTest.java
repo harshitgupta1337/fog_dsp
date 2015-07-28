@@ -29,10 +29,6 @@ import org.fog.scheduler.StreamOperatorScheduler;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
 
-/**
- * A simple example showing how to create a datacenter with one host and run one
- * cloudlet on it.
- */
 public class FogTest {
 
 	public static void main(String[] args) {
@@ -62,7 +58,6 @@ public class FogTest {
 			// Sixth step: Starts the simulation
 			CloudSim.startSimulation();
 
-			
 			CloudSim.stopSimulation();
 			//System.out.println(CloudSim.clock());
 
@@ -94,17 +89,19 @@ public class FogTest {
 		
 		cloud.setParentId(-1);
 		
-		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, 100);
-		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, 100);
+		int transmitInterval = 10000;
 		
-		Sensor sensor11 = new Sensor("sensor1-1", userId, queryId, gw1.getId(), null, 100);
-		Sensor sensor12 = new Sensor("sensor1-2", userId, queryId, gw1.getId(), null, 100);
+		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval);
+		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval);
 		
-		Sensor sensor21 = new Sensor("sensor2-1", userId, queryId, gw2.getId(), null, 100);
-		Sensor sensor22 = new Sensor("sensor2-2", userId, queryId, gw2.getId(), null, 100);
+		Sensor sensor11 = new Sensor("sensor1-1", userId, queryId, gw1.getId(), null, transmitInterval);
+		Sensor sensor12 = new Sensor("sensor1-2", userId, queryId, gw1.getId(), null, transmitInterval);
 		
-		Sensor sensor31 = new Sensor("sensor3-1", userId, queryId, gw3.getId(), null, 100);
-		Sensor sensor32 = new Sensor("sensor3-2", userId, queryId, gw3.getId(), null, 100);
+		Sensor sensor21 = new Sensor("sensor2-1", userId, queryId, gw2.getId(), null, transmitInterval);
+		Sensor sensor22 = new Sensor("sensor2-2", userId, queryId, gw2.getId(), null, transmitInterval);
+		
+		Sensor sensor31 = new Sensor("sensor3-1", userId, queryId, gw3.getId(), null, transmitInterval);
+		Sensor sensor32 = new Sensor("sensor3-2", userId, queryId, gw3.getId(), null, transmitInterval);
 
 		List<FogDevice> fogDevices = new ArrayList<FogDevice>(){{add(gw0);add(gw1);add(gw2);add(gw3);add(l1_02);add(l1_13);add(cloud);}};
 		return fogDevices;
