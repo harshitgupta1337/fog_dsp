@@ -8,6 +8,7 @@ public class Tuple extends Cloudlet{
 	private String queryId;
 	private String destOperatorId;
 	private String sensorName;
+	private int actualTupleId;
 	public Tuple(String queryId, int cloudletId, long cloudletLength, int pesNumber,
 			long cloudletFileSize, long cloudletOutputSize,
 			UtilizationModel utilizationModelCpu,
@@ -41,6 +42,14 @@ public class Tuple extends Cloudlet{
 
 	public void setSensorName(String sensorName) {
 		this.sensorName = sensorName;
+	}
+
+	public int getActualTupleId() {
+		return actualTupleId;
+	}
+
+	public void setActualTupleId(int actualTupleId) {
+		this.actualTupleId = actualTupleId;
 	}
 
 }

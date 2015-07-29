@@ -1,128 +1,41 @@
 package org.fog.scheduler;
 
-import java.util.List;
-
 import org.cloudbus.cloudsim.Cloudlet;
-import org.cloudbus.cloudsim.CloudletScheduler;
+import org.cloudbus.cloudsim.CloudletSchedulerDynamicWorkload;
 import org.cloudbus.cloudsim.ResCloudlet;
 
-public class TupleScheduler extends CloudletScheduler{
+public class TupleScheduler extends CloudletSchedulerDynamicWorkload{
 
-	@Override
-	public double updateVmProcessing(double currentTime, List<Double> mipsShare) {
-		// TODO Auto-generated method stub
-		return 0;
+	public TupleScheduler(double mips, int numberOfPes) {
+		super(mips, numberOfPes);
 	}
 
-	@Override
-	public double cloudletSubmit(Cloudlet gl, double fileTransferTime) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public double cloudletSubmit(Cloudlet gl) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public Cloudlet cloudletCancel(int clId) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public boolean cloudletPause(int clId) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public double cloudletResume(int clId) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public void cloudletFinish(ResCloudlet rcl) {
-		// TODO Auto-generated method stub
+	/**
+	 * Get estimated cloudlet completion time.
+	 * 
+	 * @param rcl the rcl
+	 * @param time the time
+	 * @return the estimated finish time
+	 */
+	public double getEstimatedFinishTime(ResCloudlet rcl, double time) {
+		//System.out.println("TIME : "+time);
+		//System.out.println("REMAINING CLOUDLET LENGTH : "+rcl.getRemainingCloudletLength()+"\tCLOUDLET LENGTH"+rcl.getCloudletLength());
+		//System.out.println("CURRENT ALLOC MIPS FOR CLOUDLET : "+getTotalCurrentAllocatedMipsForCloudlet(rcl, time));
 		
+		
+		/*>>>>>>>>>>>>>>>>>>>>*/
+		/* edit made by HARSHIT GUPTA */
+		//return time
+			//	+ ((rcl.getRemainingCloudletLength()) / getTotalCurrentAllocatedMipsForCloudlet(rcl, time));
+		return time+((rcl.getRemainingCloudletLength()) / getTotalCurrentAllocatedMipsForCloudlet(rcl, time));
+		/*end of edit*/
+		/*<<<<<<<<<<<<<<<<<<<<<*/
 	}
-
-	@Override
-	public int getCloudletStatus(int clId) {
-		// TODO Auto-generated method stub
-		return 0;
+	
+	public void cloudletFinish(ResCloudlet rcl) {
+		rcl.setCloudletStatus(Cloudlet.SUCCESS);
+		rcl.finalizeCloudlet();
+		getCloudletFinishedList().add(rcl);
 	}
-
-	@Override
-	public boolean isFinishedCloudlets() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public Cloudlet getNextFinishedCloudlet() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public int runningCloudlets() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public Cloudlet migrateCloudlet() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public double getTotalUtilizationOfCpu(double time) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public List<Double> getCurrentRequestedMips() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public double getTotalCurrentAvailableMipsForCloudlet(ResCloudlet rcl,
-			List<Double> mipsShare) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public double getTotalCurrentRequestedMipsForCloudlet(ResCloudlet rcl,
-			double time) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public double getTotalCurrentAllocatedMipsForCloudlet(ResCloudlet rcl,
-			double time) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public double getCurrentRequestedUtilizationOfRam() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public double getCurrentRequestedUtilizationOfBw() {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
+	
 }

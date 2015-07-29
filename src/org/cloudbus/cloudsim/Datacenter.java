@@ -728,7 +728,11 @@ public class Datacenter extends SimEntity {
 			// if this cloudlet is in the exec queue
 			if (estimatedFinishTime > 0.0 && !Double.isInfinite(estimatedFinishTime)) {
 				estimatedFinishTime += fileTransferTime;
-				send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
+				
+				/*	edited by HARSHIT	*/
+				//send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
+				send(getId(), estimatedFinishTime-CloudSim.clock(), CloudSimTags.VM_DATACENTER_EVENT);
+				/*	edit done	*/
 			}
 
 			if (ack) {

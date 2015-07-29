@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.cloudbus.cloudsim.CloudletSchedulerDynamicWorkload;
 import org.cloudbus.cloudsim.Host;
 import org.cloudbus.cloudsim.HostDynamicWorkload;
 import org.cloudbus.cloudsim.Log;
@@ -26,6 +25,7 @@ import org.fog.entities.Sensor;
 import org.fog.entities.StreamOperator;
 import org.fog.policy.StreamOperatorAllocationPolicy;
 import org.fog.scheduler.StreamOperatorScheduler;
+import org.fog.scheduler.TupleScheduler;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
 
@@ -89,7 +89,7 @@ public class FogTest {
 		
 		cloud.setParentId(-1);
 		
-		int transmitInterval = 10000;
+		int transmitInterval = 10;
 		
 		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval);
 		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval);
@@ -181,9 +181,9 @@ public class FogTest {
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
-		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new CloudletSchedulerDynamicWorkload(mips, 1), 0.7);
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.7);
 		System.out.println(spout.getCurrentRequestedMips());
-		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new CloudletSchedulerDynamicWorkload(mips, 1), 0.2);
+		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.2);
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout); add(bolt);}};
 		Map<String, String> edges = new HashMap<String, String>(){{put(spout.getName(), bolt.getName());}};
 		GeoCoverage geoCoverage = new GeoCoverage(0, 100, -100, 100);

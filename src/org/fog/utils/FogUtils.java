@@ -3,6 +3,7 @@ package org.fog.utils;
 public class FogUtils {
 	private static int TUPLE_ID = 1;
 	private static int ENTITY_ID = 1;
+	private static int ACTUAL_TUPLE_ID = 1;
 	
 	public static int generateTupleId(){
 		return TUPLE_ID++;
@@ -10,6 +11,10 @@ public class FogUtils {
 	
 	public static int generateEntityId(){
 		return ENTITY_ID++;
+	}
+	
+	public static int generateActualTupleId(){
+		return ACTUAL_TUPLE_ID++;
 	}
 	
 	public static int USER_ID = 1;

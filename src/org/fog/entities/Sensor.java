@@ -22,9 +22,9 @@ public class Sensor extends SimEntity{
 	
 	public Sensor(String name, int userId, double transmitInterval) {
 		super(name);
-		this.length = 4000000;
-		this.fileSize = 300;
-		this.outputSize = 300;
+		this.length = 40000000;
+		this.fileSize = 30;
+		this.outputSize = 30;
 		this.setTransmitInterval(transmitInterval);
 		setUserId(userId);
 	}
@@ -34,7 +34,7 @@ public class Sensor extends SimEntity{
 		this.setQueryId(queryId);
 		this.gatewayDeviceId = gatewayDeviceId;
 		this.geoLocation = geoLocation;
-		this.length = 40;
+		this.length = 4000;
 		this.fileSize = 3;
 		this.outputSize = 3;
 		this.setTransmitInterval(transmitInterval);
@@ -65,9 +65,11 @@ public class Sensor extends SimEntity{
 		
 		Tuple tuple = new Tuple(getQueryId(), FogUtils.generateTupleId(), length, 1, fileSize, outputSize, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
-		//System.out.println("Sensor "+getName()+" sending tuple id "+tuple.getCloudletId());
+		tuple.setActualTupleId(FogUtils.generateActualTupleId());
+		System.out.println("Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
+		
 		tuple.setDestOperatorId("spout");
-		//System.out.println("SASSA"+delay);
+		
 		send(gatewayDeviceId, delay, FogEvents.TUPLE_ARRIVAL,tuple);
 		
 		lastTransmitTime = CloudSim.clock();
