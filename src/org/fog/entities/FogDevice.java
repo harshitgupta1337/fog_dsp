@@ -142,7 +142,7 @@ public class FogDevice extends Datacenter {
 				while (vm.getCloudletScheduler().isFinishedCloudlets()) {
 					Cloudlet cl = vm.getCloudletScheduler().getNextFinishedCloudlet();
 					if (cl != null) {
-						System.out.println("Actual Tuple ID "+((Tuple)cl).getActualTupleId()+" finished on operator "+getOperatorName(cl.getVmId()) + " at time "+CloudSim.clock());
+						//System.out.println("Actual Tuple ID "+((Tuple)cl).getActualTupleId()+" finished on operator "+getOperatorName(cl.getVmId()) + " at time "+CloudSim.clock());
 						Tuple tuple = (Tuple)cl;
 						Tuple result = new Tuple(tuple.getQueryId(), FogUtils.generateTupleId(),
 								(long) (getStreamQueryMap().get(tuple.getQueryId()).getOperatorByName(tuple.getDestOperatorId()).getExpansionRatio()*tuple.getCloudletLength()),
@@ -213,7 +213,11 @@ public class FogDevice extends Datacenter {
 		Tuple tuple = (Tuple)ev.getData();
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 		
-		System.out.println(getName() + " received actual tuple ID " + tuple.getActualTupleId() + " from " + CloudSim.getEntityName(ev.getSource()) + " at time "+CloudSim.clock());
+		//System.out.println(getName() + " received actual tuple ID " + tuple.getActualTupleId() + " from " + CloudSim.getEntityName(ev.getSource()) + " at time "+CloudSim.clock());
+		
+		for(Vm vm : getHost().getVmList()){
+			System.out.println(getName()+"\t"+((StreamOperator)vm).getName()+"\t"+vm.getCurrentAllocatedMips()+"\t"+vm.getCurrentRequestedMips());
+		}
 		
 		if(Math.random() < missRate)
 			return;
@@ -274,7 +278,10 @@ public class FogDevice extends Datacenter {
 			queryToOperatorsMap.put(queryId, new ArrayList<String>());
 		}
 		queryToOperatorsMap.get(queryId).add(operator.getName());
-		
+		getVmList().add(operator);
+		if (operator.isBeingInstantiated()) {
+			operator.setBeingInstantiated(false);
+		}
 		operator.updateVmProcessing(CloudSim.clock(), getVmAllocationPolicy().getHost(operator).getVmScheduler()
 				.getAllocatedMipsForVm(operator));
 	}
@@ -291,7 +298,7 @@ public class FogDevice extends Datacenter {
 	
 	private void sendUp(Tuple tuple){
 		if(parentId > 0){
-			System.out.println(getName() + " is sending UP actual tuple Id "+tuple.getActualTupleId());
+			//System.out.println(getName() + " is sending UP actual tuple Id "+tuple.getActualTupleId());
 			send(parentId, CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ARRIVAL, tuple);
 		}
 	}

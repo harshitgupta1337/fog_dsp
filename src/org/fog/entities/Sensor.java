@@ -66,7 +66,7 @@ public class Sensor extends SimEntity{
 		Tuple tuple = new Tuple(getQueryId(), FogUtils.generateTupleId(), length, 1, fileSize, outputSize, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
 		tuple.setActualTupleId(FogUtils.generateActualTupleId());
-		System.out.println("Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
+		//System.out.println("Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
 		
 		tuple.setDestOperatorId("spout");
 		
