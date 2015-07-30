@@ -1,6 +1,6 @@
 bin/
 *.class
 .classpath
-.settings
+.settings/
 .project
 output/
