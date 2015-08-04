@@ -7,6 +7,7 @@ import org.cloudbus.cloudsim.core.SimEvent;
 import org.fog.utils.FogEvents;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoLocation;
+import org.fog.utils.TupleEmitTimes;
 
 public class Sensor extends SimEntity{
 
@@ -20,7 +21,7 @@ public class Sensor extends SimEntity{
 	private String queryId;
 	private int userId;
 	
-	public Sensor(String name, int userId, double transmitInterval) {
+/*	public Sensor(String name, int userId, double transmitInterval) {
 		super(name);
 		this.length = 40000000;
 		this.fileSize = 30;
@@ -28,7 +29,7 @@ public class Sensor extends SimEntity{
 		this.setTransmitInterval(transmitInterval);
 		setUserId(userId);
 	}
-	
+	*/
 	public Sensor(String name, int userId, String queryId, int gatewayDeviceId, GeoLocation geoLocation, double transmitInterval) {
 		super(name);
 		this.setQueryId(queryId);
@@ -41,7 +42,7 @@ public class Sensor extends SimEntity{
 		setUserId(userId);
 	}
 	
-	public Sensor(String name, int userId, int gatewayDeviceId, GeoLocation geoLocation, long length, long fileSize, long outputSize, double transmitInterval){
+	/*public Sensor(String name, int userId, int gatewayDeviceId, GeoLocation geoLocation, long length, long fileSize, long outputSize, double transmitInterval){
 		super(name);
 		this.gatewayDeviceId = gatewayDeviceId;
 		this.geoLocation = geoLocation;
@@ -50,7 +51,7 @@ public class Sensor extends SimEntity{
 		this.outputSize = outputSize;
 		this.setTransmitInterval(transmitInterval);
 		setUserId(userId);
-	}
+	}*/
 
 	/*public void transmit(){
 		System.out.println("AAAAAAAAAAAAAA");
@@ -69,6 +70,7 @@ public class Sensor extends SimEntity{
 		//System.out.println("Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
 		
 		tuple.setDestOperatorId("spout");
+		TupleEmitTimes.getInstance().setEmitTime(tuple.getActualTupleId(), CloudSim.clock()+delay);
 		
 		send(gatewayDeviceId, delay, FogEvents.TUPLE_ARRIVAL,tuple);
 		

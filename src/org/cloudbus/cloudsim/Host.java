@@ -101,7 +101,6 @@ public class Host {
 				smallerTime = time;
 			}
 		}
-
 		return smallerTime;
 	}
 

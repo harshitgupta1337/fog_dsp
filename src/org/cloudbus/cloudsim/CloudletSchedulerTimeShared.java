@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.cloudbus.cloudsim.core.CloudSim;
+import org.fog.entities.Tuple;
 
 /**
  * CloudletSchedulerTimeShared implements a policy of scheduling performed by a virtual machine.
@@ -66,6 +67,9 @@ public class CloudletSchedulerTimeShared extends CloudletScheduler {
 
 		for (ResCloudlet rcl : getCloudletExecList()) {
 			rcl.updateCloudletFinishedSoFar((long) (getCapacity(mipsShare) * timeSpam * rcl.getNumberOfPes() * Consts.MILLION));
+			//System.out.println(getTotalCurrentAllocatedMipsForCloudlet(rcl, getPreviousTime()));
+			//System.out.println("Remaining length of tuple ID "+((Tuple)rcl.getCloudlet()).getActualTupleId()+" = "+rcl.getRemainingCloudletLength());
+			
 		}
 
 		if (getCloudletExecList().size() == 0) {
@@ -312,7 +316,7 @@ public class CloudletSchedulerTimeShared extends CloudletScheduler {
 		double extraSize = getCapacity(getCurrentMipsShare()) * fileTransferTime;
 		long length = (long) (cloudlet.getCloudletLength() + extraSize);
 		cloudlet.setCloudletLength(length);
-
+		//System.out.println("MIPS Share->"+getCurrentMipsShare()+"\tCapacity->"+getCapacity(getCurrentMipsShare()));
 		return cloudlet.getCloudletLength() / getCapacity(getCurrentMipsShare());
 	}
 

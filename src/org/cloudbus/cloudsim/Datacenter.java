@@ -18,6 +18,7 @@ import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
 import org.fog.entities.StreamOperator;
+import org.fog.entities.Tuple;
 
 /**
  * Datacenter class is a CloudResource whose hostList are virtualized. It deals with processing of
@@ -246,6 +247,7 @@ public class Datacenter extends SimEntity {
 				break;
 
 			case CloudSimTags.VM_DATACENTER_EVENT:
+				//System.out.println(getName()+" received VM_DATACENTER_EVENT at time "+CloudSim.clock());
 				updateCloudletProcessing();
 				checkCloudletCompletion();
 				break;
@@ -681,7 +683,6 @@ public class Datacenter extends SimEntity {
 		try {
 			// gets the Cloudlet object
 			Cloudlet cl = (Cloudlet) ev.getData();
-
 			// checks whether this Cloudlet has finished or not
 			if (cl.isFinished()) {
 				String name = CloudSim.getEntityName(cl.getUserId());
@@ -724,14 +725,14 @@ public class Datacenter extends SimEntity {
 			Vm vm = host.getVm(vmId, userId);
 			CloudletScheduler scheduler = vm.getCloudletScheduler();
 			double estimatedFinishTime = scheduler.cloudletSubmit(cl, fileTransferTime);
+			//System.out.println(CloudSim.clock()+" : Received tuple ID "+((Tuple)cl).getActualTupleId()+" estimated finish time "+estimatedFinishTime);
 
 			// if this cloudlet is in the exec queue
 			if (estimatedFinishTime > 0.0 && !Double.isInfinite(estimatedFinishTime)) {
 				estimatedFinishTime += fileTransferTime;
-				
+
 				/*	edited by HARSHIT	*/
-				//send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
-				send(getId(), estimatedFinishTime-CloudSim.clock(), CloudSimTags.VM_DATACENTER_EVENT);
+				send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
 				/*	edit done	*/
 			}
 

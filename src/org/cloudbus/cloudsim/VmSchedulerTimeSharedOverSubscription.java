@@ -62,6 +62,7 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 				totalRequestedMips += mips;
 			}
 		}
+		//System.out.println("Setting MIPS of "+vmUid+" to "+mipsShareRequested);
 
 		getMipsMapRequested().put(vmUid, mipsShareRequested);
 		setPesInUse(getPesInUse() + mipsShareRequested.size());
@@ -83,6 +84,7 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 				}
 				mipsShareAllocated.add(mipsRequested);
 			}
+			//System.out.println("Setting MIPS of "+vmUid+" to "+mipsShareAllocated);
 
 			getMipsMap().put(vmUid, mipsShareAllocated);
 			setAvailableMips(getAvailableMips() - totalRequestedMips);
@@ -160,6 +162,7 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 			}
 
 			// add in the new map
+			//System.out.println("Setting MIPS of "+vmUid+" to "+updatedMipsAllocation);
 			getMipsMap().put(vmUid, updatedMipsAllocation);
 
 		}
