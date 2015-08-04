@@ -89,7 +89,7 @@ public class FogTest {
 		
 		cloud.setParentId(-1);
 		
-		int transmitInterval = 100;
+		int transmitInterval = 50;
 		
 		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval);
 		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval);

@@ -35,7 +35,7 @@ public class Sensor extends SimEntity{
 		this.setQueryId(queryId);
 		this.gatewayDeviceId = gatewayDeviceId;
 		this.geoLocation = geoLocation;
-		this.length = 4000;
+		this.length = 10000;
 		this.fileSize = 3;
 		this.outputSize = 3;
 		this.setTransmitInterval(transmitInterval);

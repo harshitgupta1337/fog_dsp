@@ -25,15 +25,16 @@ import org.fog.utils.TupleEmitTimes;
 
 public class FogDevice extends Datacenter {
 	
-	private static double INPUT_RATE_CALC_INTERVAL = 200;
-
+	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 20;
+	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
+	
 	private double missRate;
 	private Map<String, StreamQuery> streamQueryMap;
 	private Map<String, List<String>> queryToOperatorsMap;
 	private GeoCoverage geoCoverage;
 	private Map<Pair<String, Integer>, Double> inputRateByChildId;
 	private Map<Pair<String, Integer>, Integer> inputTuples;
-	private Queue<Double> utilization; 
+	private Map<String, Queue<Double>> utilization; 
 	/**	
 	 * ID of the parent Fog Device
 	 */
@@ -81,7 +82,7 @@ public class FogDevice extends Datacenter {
 		this.inputRateByChildId = new HashMap<Pair<String, Integer>, Double>();
 		this.inputTuples = new HashMap<Pair<String, Integer>, Integer>();
 		
-		this.utilization = new LinkedList<Double>();
+		this.utilization = new HashMap<String, Queue<Double>>();
 		
 	}
 
@@ -93,14 +94,12 @@ public class FogDevice extends Datacenter {
 	 * @post $none
 	 */
 	protected void registerOtherEntity() {
-		updateInputRate();
-		updateUtils();
+		updateResourceUsage();
 	}
 	
 	@Override
 	protected void processOtherEvent(SimEvent ev) {
 		switch(ev.getTag()){
-		
 		case FogEvents.TUPLE_ARRIVAL:
 			processTupleArrival(ev);
 			break;
@@ -116,14 +115,25 @@ public class FogDevice extends Datacenter {
 		case FogEvents.QUERY_SUBMIT:
 			processQuerySubmit(ev);
 			break;
-		case FogEvents.CALCULATE_INPUT_RATE:
-			updateInputRate();
+		case FogEvents.UPDATE_RESOURCE_USAGE:
+			updateResourceUsage();
 			break;
-		case FogEvents.CALCULATE_UTIL:
-			updateUtils();
 		default:
 			break;
 		}
+	}
+	
+	/**
+	 * Calculates utilization of each operator.
+	 * @param operatorName
+	 * @return
+	 */
+	public double getUtilizationOfOperator(String operatorName){
+		double total = 0;
+		for(Double d : utilization.get(operatorName)){
+			total += d;
+		}
+		return total/utilization.get(operatorName).size();
 	}
 	
 	public String getOperatorName(int vmId){
@@ -174,28 +184,29 @@ public class FogDevice extends Datacenter {
 	}
 	
 	private void updateUtils(){
-		if(utilization.size()>10){
-			utilization.remove();
-		}
-		double totalRequestedMips = 0;
-		for(Vm operator : getHost().getVmList()){
-			//System.out.println(CloudSim.clock()+"\t"+getName()+"\t"+((StreamOperator)operator).getName()+"\t"+operator.getCloudletScheduler().runningCloudlets());
-			for(Double mips : (((StreamOperator)operator).getCurrentRequestedMips())){
-				totalRequestedMips += mips;
-			}
-		}
-		utilization.add(totalRequestedMips/getHost().getTotalMips());
-		//send(getId(), 10, FogEvents.CALCULATE_UTIL);
 		
+		for(Vm vm : getHost().getVmList()){
+			StreamOperator operator = (StreamOperator)vm;
+			if(utilization.get(operator.getName()).size() > RESOURCE_USAGE_VECTOR_SIZE){
+				utilization.get(operator.getName()).remove();
+			}
+			utilization.get(operator.getName()).add(operator.getTotalUtilizationOfCpu(CloudSim.clock()));
+			//System.out.println(operator.getName()+"--->\t"+getUtilizationOfOperator(operator.getName()));
+		}
 	}
 	
 	private void updateInputRate(){
 		for(Pair<String, Integer> pair : inputTuples.keySet()){
-			inputRateByChildId.put(pair, inputTuples.get(pair)/INPUT_RATE_CALC_INTERVAL);
+			inputRateByChildId.put(pair, inputTuples.get(pair)/RESOURCE_USAGE_COLLECTION_INTERVAL);
 			inputTuples.put(pair, 0);
 			//System.out.println(getName()+"\t"+CloudSim.getEntityName(pair.getSecond())+"+"+pair.getFirst()+" --> "+inputRateByChildId.get(pair));
 		}
-		send(getId(), INPUT_RATE_CALC_INTERVAL, FogEvents.CALCULATE_INPUT_RATE);
+	}
+	
+	private void updateResourceUsage(){
+		updateUtils();
+		updateInputRate();
+		send(getId(), RESOURCE_USAGE_COLLECTION_INTERVAL, FogEvents.UPDATE_RESOURCE_USAGE);
 	}
 	
 	private void updateInputTupleCount(int srcId, String operatorName){
@@ -218,17 +229,17 @@ public class FogDevice extends Datacenter {
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 		
 		//System.out.println(getName() + " received actual tuple ID " + tuple.getActualTupleId() + " for " + tuple.getDestOperatorId() + " at time "+CloudSim.clock());
-		for(Vm vm : getHost().getVmList()){
+		/*for(Vm vm : getHost().getVmList()){
 			//System.out.println(getName()+"\t"+((StreamOperator)vm).getName()+"\t"+vm.getCurrentAllocatedMips()+"\t"+vm.getCurrentRequestedMips());
 			//System.out.println(getName()+"\t"+((StreamOperator)vm).getName()+"\t"+vm.getCloudletScheduler().getCurrentMipsShare());
-		}
+		}*/
 		
 		if(Math.random() < missRate)
 			return;
 		
 		if(getName().equals("cloud") && tuple.getDestOperatorId()==null){
 			//System.out.println(CloudSim.clock()+" : Tuple ID "+tuple.getActualTupleId()+" arrived at cloud");
-			System.out.println(tuple.getActualTupleId()+"\t---->\t"+(CloudSim.clock()-TupleEmitTimes.getEmitTime(tuple.getActualTupleId())));
+			//System.out.println(tuple.getActualTupleId()+"\t---->\t"+(CloudSim.clock()-TupleEmitTimes.getEmitTime(tuple.getActualTupleId())));
 		}
 			
 		
@@ -295,7 +306,7 @@ public class FogDevice extends Datacenter {
 		if (operator.isBeingInstantiated()) {
 			operator.setBeingInstantiated(false);
 		}
-		
+		utilization.put(operator.getName(), new LinkedList<Double>());
 		operator.updateVmProcessing(CloudSim.clock(), getVmAllocationPolicy().getHost(operator).getVmScheduler()
 				.getAllocatedMipsForVm(operator));
 	}
