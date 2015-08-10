@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.cloudbus.cloudsim.Host;
-import org.cloudbus.cloudsim.HostDynamicWorkload;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Pe;
 import org.cloudbus.cloudsim.Storage;
@@ -29,7 +28,7 @@ import org.fog.scheduler.TupleScheduler;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
 
-public class FogTest {
+public class FogTestSingleOperator {
 
 	public static void main(String[] args) {
 
@@ -176,16 +175,18 @@ public class FogTest {
 	}
 	
 	private static StreamQuery createStreamQuery(String queryId, int userId){
-		int mips = 1000;
+		int mips = 500;
 		long size = 10000; // image size (MB)
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
 		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1);
 		System.out.println(spout.getCurrentRequestedMips());
-		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.2);
-		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout); add(bolt);}};
-		Map<String, String> edges = new HashMap<String, String>(){{put(spout.getName(), bolt.getName());}};
+		//final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.2);
+		//List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout); add(bolt);}};
+		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);}};
+		//Map<String, String> edges = new HashMap<String, String>(){{put(spout.getName(), bolt.getName());}};
+		Map<String, String> edges = new HashMap<String, String>();
 		GeoCoverage geoCoverage = new GeoCoverage(0, 100, -100, 100);
 		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage);
 		

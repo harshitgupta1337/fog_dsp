@@ -21,12 +21,11 @@ import org.fog.dsp.StreamQuery;
 import org.fog.utils.FogEvents;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
-import org.fog.utils.TupleEmitTimes;
 
 public class FogDevice extends Datacenter {
 	
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 20;
-	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
+	private static double RESOURCE_USAGE_VECTOR_SIZE = 10;
 	
 	private double missRate;
 	private Map<String, StreamQuery> streamQueryMap;
@@ -184,15 +183,21 @@ public class FogDevice extends Datacenter {
 	}
 	
 	private void updateUtils(){
-		
+		double total = 0;
 		for(Vm vm : getHost().getVmList()){
 			StreamOperator operator = (StreamOperator)vm;
 			if(utilization.get(operator.getName()).size() > RESOURCE_USAGE_VECTOR_SIZE){
 				utilization.get(operator.getName()).remove();
 			}
 			utilization.get(operator.getName()).add(operator.getTotalUtilizationOfCpu(CloudSim.clock()));
-			//System.out.println(operator.getName()+"--->\t"+getUtilizationOfOperator(operator.getName()));
+			
+			System.out.println(operator.getName()+"--->\t"+getUtilizationOfOperator(operator.getName()));
+			//System.out.println(getMissRate()+"\t"+operator.getName()+"--->\t"+utilization.get(operator.getName()));
+			
+			total += getUtilizationOfOperator(operator.getName());
 		}
+		
+		
 	}
 	
 	private void updateInputRate(){
