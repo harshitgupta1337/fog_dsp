@@ -62,7 +62,6 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 				totalRequestedMips += mips;
 			}
 		}
-		//System.out.println("Setting MIPS of "+vmUid+" to "+mipsShareRequested);
 
 		getMipsMapRequested().put(vmUid, mipsShareRequested);
 		setPesInUse(getPesInUse() + mipsShareRequested.size());
@@ -90,6 +89,9 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 			setAvailableMips(getAvailableMips() - totalRequestedMips);
 		} else {
 			redistributeMipsDueToOverSubscription();
+		}
+		for(String uid : getMipsMap().keySet()){
+			System.out.println(uid+"\t--->\t"+getMipsMap().get(uid));
 		}
 
 		return true;
@@ -132,6 +134,7 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 		}
 
 		double totalAvailableMips = PeList.getTotalMips(getPeList());
+
 		double scalingFactor = totalAvailableMips / totalRequiredMipsByAllVms;
 
 		// Clear the old MIPS allocation
@@ -141,7 +144,6 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 		for (Entry<String, List<Double>> entry : mipsMapCapped.entrySet()) {
 			String vmUid = entry.getKey();
 			List<Double> requestedMips = entry.getValue();
-
 			List<Double> updatedMipsAllocation = new ArrayList<Double>();
 			for (Double mips : requestedMips) {
 				if (getVmsMigratingOut().contains(vmUid)) {

@@ -29,7 +29,7 @@ import org.fog.scheduler.TupleScheduler;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
 
-public class FogTest {
+public class FogTest3Ops {
 
 	public static void main(String[] args) {
 
@@ -69,15 +69,15 @@ public class FogTest {
 	}
 
 	private static List<FogDevice> createFogDevices(String queryId, int userId) {
-		final FogDevice gw0 = createFogDevice("gateway-0", new GeoCoverage(-100, 0, 0, 100));
-		final FogDevice gw1 = createFogDevice("gateway-1", new GeoCoverage(0, 100, 0, 100));
-		final FogDevice gw2 = createFogDevice("gateway-2", new GeoCoverage(-100, 0, -100, 0));
-		final FogDevice gw3 = createFogDevice("gateway-3", new GeoCoverage(0, 100, -100, 0));
+		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100));
+		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100));
+		final FogDevice gw2 = createFogDevice("gateway-2", 1000, new GeoCoverage(-100, 0, -100, 0));
+		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0));
 		
-		final FogDevice l1_02 = createFogDevice("level1-02", new GeoCoverage(-100, 0, -100, 100));
-		final FogDevice l1_13 = createFogDevice("level1-13", new GeoCoverage(0, 100, -100, 100));
+		final FogDevice l1_02 = createFogDevice("level1-02", 1000, new GeoCoverage(-100, 0, -100, 100));
+		final FogDevice l1_13 = createFogDevice("level1-13", 1000, new GeoCoverage(0, 100, -100, 100));
 		
-		final FogDevice cloud = createFogDevice("cloud", new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX));
+		final FogDevice cloud = createFogDevice("cloud", 10000, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX));
 		
 		gw0.setParentId(l1_02.getId());
 		gw2.setParentId(l1_02.getId());
@@ -114,13 +114,11 @@ public class FogTest {
 	 *
 	 * @return the datacenter
 	 */
-	private static FogDevice createFogDevice(String name, GeoCoverage geoCoverage) {
+	private static FogDevice createFogDevice(String name, int mips, GeoCoverage geoCoverage) {
 
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
 		// In this example, it will have only one core.
 		List<Pe> peList = new ArrayList<Pe>();
-
-		int mips = 1000;
 
 		// 3. Create PEs and add these into a list.
 		peList.add(new Pe(0, new PeProvisionerOverbooking(mips))); // need to store Pe id and MIPS Rating
@@ -183,8 +181,9 @@ public class FogTest {
 		String vmm = "Xen"; // VMM name
 		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1);
 		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.2);
-		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout); add(bolt);}};
-		Map<String, String> edges = new HashMap<String, String>(){{put(spout.getName(), bolt.getName());}};
+		final StreamOperator bolt2 = new StreamOperator(FogUtils.generateEntityId(), "bolt2", null, "sensor", queryId, userId, mips-100, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.2);
+		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout); add(bolt); add(bolt2);}};
+		Map<String, String> edges = new HashMap<String, String>(){{put(spout.getName(), bolt.getName()); put(bolt.getName(), bolt2.getName());}};
 		GeoCoverage geoCoverage = new GeoCoverage(0, 100, -100, 100);
 		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage);
 		

@@ -57,7 +57,7 @@ public class Controller extends SimEntity{
 	
 	private void processQuerySubmit(SimEvent ev){
 		StreamQuery query = (StreamQuery) ev.getData();
-		Map<String, Integer> allocationMap = (new OperatorPlacement(fogDevices, query)).getOperatorToDeviceMap();
+		Map<String, Integer> allocationMap = (new OperatorPlacementSimple(fogDevices, query)).getOperatorToDeviceMap();
 		for(String operatorName : allocationMap.keySet()){
 			StreamOperator operator = query.getOperatorByName(operatorName);
 			sendNow(allocationMap.get(operatorName), FogEvents.LAUNCH_OPERATOR, operator);
@@ -65,7 +65,7 @@ public class Controller extends SimEntity{
 	}
 	
 	private void processQuerySubmit(StreamQuery query){
-		Map<String, Integer> allocationMap = (new OperatorPlacement(fogDevices, query)).getOperatorToDeviceMap();
+		Map<String, Integer> allocationMap = (new OperatorPlacementSimple(fogDevices, query)).getOperatorToDeviceMap();
 		for(String operatorName : allocationMap.keySet()){
 			StreamOperator operator = query.getOperatorByName(operatorName);
 			System.out.println("Operator "+operator.getName()+" has been placed on "+allocationMap.get(operatorName));
