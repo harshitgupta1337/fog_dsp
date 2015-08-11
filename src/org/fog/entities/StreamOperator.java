@@ -27,6 +27,7 @@ public class StreamOperator extends Vm{
 	private String sensorName;
 	private String queryId;
 	private double expansionRatio;
+	private double fileExpansionRatio;
 	public StreamOperator(
 			int id,
 			String name,
@@ -40,7 +41,8 @@ public class StreamOperator extends Vm{
 			long size,
 			String vmm,
 			CloudletScheduler cloudletScheduler,
-			double expansionRatio) {
+			double expansionRatio,
+			double fileExpansionRatio) {
 		super(id, userId, mips, 1, ram, bw, size, vmm, cloudletScheduler);
 		setName(name);
 		setId(id);
@@ -57,6 +59,7 @@ public class StreamOperator extends Vm{
 		setVmm(vmm);
 		setCloudletScheduler(cloudletScheduler);
 		setExpansionRatio(expansionRatio);
+		setFileExpansionRatio(fileExpansionRatio);
 		setInMigration(false);
 		setBeingInstantiated(true);
 
@@ -94,5 +97,11 @@ public class StreamOperator extends Vm{
 	}
 	public void setExpansionRatio(double expansionRatio) {
 		this.expansionRatio = expansionRatio;
+	}
+	public double getFileExpansionRatio() {
+		return fileExpansionRatio;
+	}
+	public void setFileExpansionRatio(double fileExpansionRatio) {
+		this.fileExpansionRatio = fileExpansionRatio;
 	}
 }

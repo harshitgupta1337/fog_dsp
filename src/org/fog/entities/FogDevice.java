@@ -30,6 +30,7 @@ public class FogDevice extends Datacenter {
 	private static double INPUT_RATE_TIME = 1000;
 	
 	private double missRate;
+	private double uplinkBandwidth;
 	private Map<String, StreamQuery> streamQueryMap;
 	private Map<String, List<String>> queryToOperatorsMap;
 	private GeoCoverage geoCoverage;
@@ -53,7 +54,8 @@ public class FogDevice extends Datacenter {
 			FogDeviceCharacteristics characteristics,
 			VmAllocationPolicy vmAllocationPolicy,
 			List<Storage> storageList,
-			double schedulingInterval) throws Exception {
+			double schedulingInterval,
+			double uplinkBandwidth) throws Exception {
 		super(name, characteristics, vmAllocationPolicy, storageList, schedulingInterval);
 		setGeoCoverage(geoCoverage);
 		setCharacteristics(characteristics);
@@ -62,6 +64,7 @@ public class FogDevice extends Datacenter {
 		setStorageList(storageList);
 		setVmList(new ArrayList<Vm>());
 		setSchedulingInterval(schedulingInterval);
+		setUplinkBandwidth(uplinkBandwidth);
 		for (Host host : getCharacteristics().getHostList()) {
 			host.setDatacenter(this);
 		}
@@ -161,7 +164,7 @@ public class FogDevice extends Datacenter {
 						Tuple result = new Tuple(tuple.getQueryId(), FogUtils.generateTupleId(),
 								(long) (getStreamQueryMap().get(tuple.getQueryId()).getOperatorByName(tuple.getDestOperatorId()).getExpansionRatio()*tuple.getCloudletLength()),
 								tuple.getNumberOfPes(),
-								tuple.getCloudletFileSize(),
+								(long) (getStreamQueryMap().get(tuple.getQueryId()).getOperatorByName(tuple.getDestOperatorId()).getFileExpansionRatio()*tuple.getCloudletFileSize()),
 								tuple.getCloudletOutputSize(),
 								tuple.getUtilizationModelCpu(),
 								tuple.getUtilizationModelRam(),
@@ -312,6 +315,8 @@ public class FogDevice extends Datacenter {
 		if(getName().equals("cloud") && tuple.getDestOperatorId()==null){
 			//System.out.println(CloudSim.clock()+" : Tuple ID "+tuple.getActualTupleId()+" arrived at cloud");
 			System.out.println(tuple.getActualTupleId()+"\t---->\t"+(CloudSim.clock()-TupleEmitTimes.getEmitTime(tuple.getActualTupleId())));
+			TupleEmitTimes.removeEmitTime(tuple.getActualTupleId());
+			
 		}
 			
 		
@@ -374,7 +379,8 @@ public class FogDevice extends Datacenter {
 	
 	private void sendUp(Tuple tuple){
 		if(parentId > 0){
-			send(parentId, CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ARRIVAL, tuple);
+			double networkDelay = tuple.getCloudletFileSize()/getUplinkBandwidth();
+			send(parentId, networkDelay, FogEvents.TUPLE_ARRIVAL, tuple);
 		}
 	}
 	
@@ -424,6 +430,14 @@ public class FogDevice extends Datacenter {
 
 	public void setMissRate(double missRate) {
 		this.missRate = missRate;
+	}
+
+	public double getUplinkBandwidth() {
+		return uplinkBandwidth;
+	}
+
+	public void setUplinkBandwidth(double uplinkBandwidth) {
+		this.uplinkBandwidth = uplinkBandwidth;
 	}
 
 	

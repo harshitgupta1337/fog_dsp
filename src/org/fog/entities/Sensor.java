@@ -21,46 +21,17 @@ public class Sensor extends SimEntity{
 	private String queryId;
 	private int userId;
 	
-/*	public Sensor(String name, int userId, double transmitInterval) {
-		super(name);
-		this.length = 40000000;
-		this.fileSize = 30;
-		this.outputSize = 30;
-		this.setTransmitInterval(transmitInterval);
-		setUserId(userId);
-	}
-	*/
 	public Sensor(String name, int userId, String queryId, int gatewayDeviceId, GeoLocation geoLocation, double transmitInterval) {
 		super(name);
 		this.setQueryId(queryId);
 		this.gatewayDeviceId = gatewayDeviceId;
 		this.geoLocation = geoLocation;
 		this.length = 10000;
-		this.fileSize = 3;
+		this.fileSize = 3000;
 		this.outputSize = 3;
 		this.setTransmitInterval(transmitInterval);
 		setUserId(userId);
 	}
-	
-	/*public Sensor(String name, int userId, int gatewayDeviceId, GeoLocation geoLocation, long length, long fileSize, long outputSize, double transmitInterval){
-		super(name);
-		this.gatewayDeviceId = gatewayDeviceId;
-		this.geoLocation = geoLocation;
-		this.length = length;
-		this.fileSize = fileSize;
-		this.outputSize = outputSize;
-		this.setTransmitInterval(transmitInterval);
-		setUserId(userId);
-	}*/
-
-	/*public void transmit(){
-		System.out.println("AAAAAAAAAAAAAA");
-		if(CloudSim.clock() - lastTransmitTime >= transmitInterval){
-			Tuple tuple = new Tuple(getQueryId(), FogUtils.generateTupleId(), length, 1, fileSize, outputSize, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
-			sendNow(gatewayDeviceId, FogEvents.TUPLE_ARRIVAL,tuple);
-			lastTransmitTime = CloudSim.clock();
-		}
-	}*/
 	
 	public void transmit(double delay){
 		

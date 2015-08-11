@@ -15,6 +15,10 @@ public class TupleEmitTimes {
 		return instance;
 	}
 	
+	public static void removeEmitTime(int tupleId){
+		getInstance().getStartTimeMap().remove(tupleId);
+	}
+	
 	public static void setEmitTime(int tupleId, double time){
 		getInstance().getStartTimeMap().put(tupleId, time);
 	}

@@ -68,16 +68,15 @@ public class FogTestSingleOperator {
 	}
 
 	private static List<FogDevice> createFogDevices(String queryId, int userId) {
-		final FogDevice gw0 = createFogDevice("gateway-0", new GeoCoverage(-100, 0, 0, 100));
-		final FogDevice gw1 = createFogDevice("gateway-1", new GeoCoverage(0, 100, 0, 100));
-		final FogDevice gw2 = createFogDevice("gateway-2", new GeoCoverage(-100, 0, -100, 0));
-		final FogDevice gw3 = createFogDevice("gateway-3", new GeoCoverage(0, 100, -100, 0));
+		final FogDevice gw0 = createFogDevice("gateway-0", new GeoCoverage(-100, 0, 0, 100), 1000);
+		final FogDevice gw1 = createFogDevice("gateway-1", new GeoCoverage(0, 100, 0, 100), 1000);
+		final FogDevice gw2 = createFogDevice("gateway-2", new GeoCoverage(-100, 0, -100, 0), 1000);
+		final FogDevice gw3 = createFogDevice("gateway-3", new GeoCoverage(0, 100, -100, 0), 1000);
 		
-		final FogDevice l1_02 = createFogDevice("level1-02", new GeoCoverage(-100, 0, -100, 100));
-		final FogDevice l1_13 = createFogDevice("level1-13", new GeoCoverage(0, 100, -100, 100));
+		final FogDevice l1_02 = createFogDevice("level1-02", new GeoCoverage(-100, 0, -100, 100), 100);
+		final FogDevice l1_13 = createFogDevice("level1-13", new GeoCoverage(0, 100, -100, 100), 100);
 		
-		final FogDevice cloud = createFogDevice("cloud", new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX));
-		
+		final FogDevice cloud = createFogDevice("cloud", new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01);
 		gw0.setParentId(l1_02.getId());
 		gw2.setParentId(l1_02.getId());
 		gw1.setParentId(l1_13.getId());
@@ -113,7 +112,7 @@ public class FogTestSingleOperator {
 	 *
 	 * @return the datacenter
 	 */
-	private static FogDevice createFogDevice(String name, GeoCoverage geoCoverage) {
+	private static FogDevice createFogDevice(String name, GeoCoverage geoCoverage, double uplinkBandwidth) {
 
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
 		// In this example, it will have only one core.
@@ -166,7 +165,7 @@ public class FogTestSingleOperator {
 		// 6. Finally, we need to create a PowerDatacenter object.
 		FogDevice fogdevice = null;
 		try {
-			fogdevice = new FogDevice(name, geoCoverage, characteristics, new StreamOperatorAllocationPolicy(hostList), storageList, 0);
+			fogdevice = new FogDevice(name, geoCoverage, characteristics, new StreamOperatorAllocationPolicy(hostList), storageList, 0, uplinkBandwidth);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -180,9 +179,9 @@ public class FogTestSingleOperator {
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
-		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1);
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1);
 		System.out.println(spout.getCurrentRequestedMips());
-		//final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.2);
+		//final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.2, 0.2);
 		//List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout); add(bolt);}};
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);}};
 		//Map<String, String> edges = new HashMap<String, String>(){{put(spout.getName(), bolt.getName());}};
