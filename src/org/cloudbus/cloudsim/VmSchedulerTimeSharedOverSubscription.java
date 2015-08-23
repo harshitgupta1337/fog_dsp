@@ -90,9 +90,9 @@ public class VmSchedulerTimeSharedOverSubscription extends VmSchedulerTimeShared
 		} else {
 			redistributeMipsDueToOverSubscription();
 		}
-		for(String uid : getMipsMap().keySet()){
+		/*for(String uid : getMipsMap().keySet()){
 			System.out.println(uid+"\t--->\t"+getMipsMap().get(uid));
-		}
+		}*/
 
 		return true;
 	}

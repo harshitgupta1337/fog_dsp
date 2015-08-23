@@ -66,9 +66,10 @@ public class CloudletSchedulerTimeShared extends CloudletScheduler {
 		double timeSpam = currentTime - getPreviousTime();
 
 		for (ResCloudlet rcl : getCloudletExecList()) {
+						
 			rcl.updateCloudletFinishedSoFar((long) (getCapacity(mipsShare) * timeSpam * rcl.getNumberOfPes() * Consts.MILLION));
 			//System.out.println(getTotalCurrentAllocatedMipsForCloudlet(rcl, getPreviousTime()));
-			//System.out.println("Remaining length of tuple ID "+((Tuple)rcl.getCloudlet()).getActualTupleId()+" = "+rcl.getRemainingCloudletLength());
+			//OLA System.out.println(CloudSim.clock()+ " : Remaining length of tuple ID "+((Tuple)rcl.getCloudlet()).getActualTupleId()+" = "+rcl.getRemainingCloudletLength());
 			
 		}
 
