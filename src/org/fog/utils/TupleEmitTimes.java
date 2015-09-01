@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class TupleEmitTimes {
 
-	private Map<Integer, Double> startTimeMap;
+	private Map<String, Map<Integer, Double>> timeMap;
 	
 	private static TupleEmitTimes instance;
 	
@@ -15,28 +15,30 @@ public class TupleEmitTimes {
 		return instance;
 	}
 	
-	public static void removeEmitTime(int tupleId){
-		getInstance().getStartTimeMap().remove(tupleId);
+	public static void removeEmitTime(String queryId, int tupleId){
+		getInstance().getTimeMap().get(tupleId).remove(tupleId);
 	}
 	
-	public static void setEmitTime(int tupleId, double time){
-		getInstance().getStartTimeMap().put(tupleId, time);
+	public static void setEmitTime(String queryId, int tupleId, double time){
+		if(!getInstance().getTimeMap().containsKey(queryId))
+			getInstance().getTimeMap().put(queryId, new HashMap<Integer, Double>());
+		getInstance().getTimeMap().get(queryId).put(tupleId, time);
 	}
 	
-	public static double getEmitTime(int tupleId){
-		return getInstance().getStartTimeMap().get(tupleId);
+	public static double getEmitTime(String queryId, int tupleId){
+		return getInstance().getTimeMap().get(queryId).get(tupleId);
 	}
 	
 	private TupleEmitTimes(){
-		this.setStartTimeMap(new HashMap<Integer, Double>());
+		this.setTimeMap(new HashMap<String, Map<Integer, Double>>());
 	}
 
-	public Map<Integer, Double> getStartTimeMap() {
-		return startTimeMap;
+	public Map<String, Map<Integer, Double>> getTimeMap() {
+		return timeMap;
 	}
 
-	public void setStartTimeMap(Map<Integer, Double> startTimeMap) {
-		this.startTimeMap = startTimeMap;
+	public void setTimeMap(Map<String, Map<Integer, Double>> timeMap) {
+		this.timeMap = timeMap;
 	}
 	
 	

@@ -55,11 +55,9 @@ public class FogTest3Ops {
 			Controller controller = new Controller("master-controller", fogDevices);
 			controller.submitStreamQuery(query);
 			
-			// Sixth step: Starts the simulation
 			CloudSim.startSimulation();
 
 			CloudSim.stopSimulation();
-			//System.out.println(CloudSim.clock());
 
 			Log.printLine("CloudSimExample1 finished!");
 		} catch (Exception e) {
@@ -69,15 +67,15 @@ public class FogTest3Ops {
 	}
 
 	private static List<FogDevice> createFogDevices(String queryId, int userId) {
-		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100), 1000);
-		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100), 1000);
-		final FogDevice gw2 = createFogDevice("gateway-2", 1000, new GeoCoverage(-100, 0, -100, 0), 1000);
-		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0), 1000);
+		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100), 1000, 1);
+		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100), 1000, 1);
+		final FogDevice gw2 = createFogDevice("gateway-2", 1000, new GeoCoverage(-100, 0, -100, 0), 1000, 1);
+		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0), 1000, 1);
 		
-		final FogDevice l1_02 = createFogDevice("level1-02", 1000, new GeoCoverage(-100, 0, -100, 100), 10);
-		final FogDevice l1_13 = createFogDevice("level1-13", 1000, new GeoCoverage(0, 100, -100, 100), 10);
+		final FogDevice l1_02 = createFogDevice("level1-02", 1000, new GeoCoverage(-100, 0, -100, 100), 100, 1);
+		final FogDevice l1_13 = createFogDevice("level1-13", 1000, new GeoCoverage(0, 100, -100, 100), 100, 1);
 		
-		final FogDevice cloud = createFogDevice("cloud", 10000, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01);
+		final FogDevice cloud = createFogDevice("cloud", 10000, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
 		
 		gw0.setParentId(l1_02.getId());
 		gw2.setParentId(l1_02.getId());
@@ -89,7 +87,7 @@ public class FogTest3Ops {
 		
 		cloud.setParentId(-1);
 		
-		int transmitInterval = 80;
+		int transmitInterval = 87;
 		
 		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval);
 		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval);
@@ -114,7 +112,7 @@ public class FogTest3Ops {
 	 *
 	 * @return the datacenter
 	 */
-	private static FogDevice createFogDevice(String name, int mips, GeoCoverage geoCoverage, double uplinkBandwidth) {
+	private static FogDevice createFogDevice(String name, int mips, GeoCoverage geoCoverage, double uplinkBandwidth, double latency) {
 
 		// 2. A Machine contains one or more PEs or CPUs/Cores.
 		// In this example, it will have only one core.
@@ -122,10 +120,7 @@ public class FogTest3Ops {
 
 		// 3. Create PEs and add these into a list.
 		peList.add(new Pe(0, new PeProvisionerOverbooking(mips))); // need to store Pe id and MIPS Rating
-		//peList.add(new Pe(1, new PeProvisionerSimple(mips)));
-		//peList.add(new Pe(2, new PeProvisionerSimple(mips)));
-		// 4. Create Host with its id and list of PEs and add them to the list
-		// of machines
+
 		int hostId = FogUtils.generateEntityId();
 		int ram = 2048; // host memory (MB)
 		long storage = 1000000; // host storage
@@ -142,10 +137,7 @@ public class FogTest3Ops {
 
 		List<Host> hostList = new ArrayList<Host>();
 		hostList.add(host);
-		// 5. Create a DatacenterCharacteristics object that stores the
-		// properties of a data center: architecture, OS, list of
-		// Machines, allocation policy: time- or space-shared, time zone
-		// and its price (G$/Pe time unit).
+
 		String arch = "x86"; // system architecture
 		String os = "Linux"; // operating system
 		String vmm = "Xen";
@@ -162,17 +154,16 @@ public class FogTest3Ops {
 				arch, os, vmm, host, time_zone, cost, costPerMem,
 				costPerStorage, costPerBw, geoCoverage);
 
-		// 6. Finally, we need to create a PowerDatacenter object.
 		FogDevice fogdevice = null;
 		try {
-			fogdevice = new FogDevice(name, geoCoverage, characteristics, new StreamOperatorAllocationPolicy(hostList), storageList, 0, uplinkBandwidth);
+			fogdevice = new FogDevice(name, geoCoverage, characteristics, new StreamOperatorAllocationPolicy(hostList), storageList, 0, uplinkBandwidth, latency);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		return fogdevice;
 	}
-	
+
 	private static StreamQuery createStreamQuery(String queryId, int userId){
 		int mips = 1000;
 		long size = 10000; // image size (MB)

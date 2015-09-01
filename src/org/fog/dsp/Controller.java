@@ -10,6 +10,8 @@ import org.cloudbus.cloudsim.core.SimEvent;
 import org.fog.entities.FogDevice;
 import org.fog.entities.StreamOperator;
 import org.fog.utils.FogEvents;
+import org.fog.utils.TupleEmitTimes;
+import org.fog.utils.TupleFinishDetails;
 
 public class Controller extends SimEntity{
 
@@ -22,8 +24,10 @@ public class Controller extends SimEntity{
 	public Controller(String name, List<FogDevice> fogDevices) {
 		super(name);
 		this.queries = new ArrayList<StreamQuery>();
+		for(FogDevice fogDevice : fogDevices){
+			fogDevice.setControllerId(getId());
+		}
 		setFogDevices(fogDevices);
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override
@@ -40,8 +44,18 @@ public class Controller extends SimEntity{
 		case FogEvents.QUERY_SUBMIT:
 			processQuerySubmit(ev);
 			break;
+		case FogEvents.TUPLE_FINISHED:
+			processTupleFinished(ev);
+			break;
 		}
 		
+	}
+
+	private void processTupleFinished(SimEvent ev) {
+		TupleFinishDetails details = (TupleFinishDetails)ev.getData();
+		TupleEmitTimes.setEmitTime(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
+		System.out.println(details.getActualTupleId()+"\t---->\t"+(details.getFinishTime()-details.getEmitTime()));
+
 	}
 
 	@Override

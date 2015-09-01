@@ -38,10 +38,12 @@ public class Sensor extends SimEntity{
 		Tuple tuple = new Tuple(getQueryId(), FogUtils.generateTupleId(), length, 1, fileSize, outputSize, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
 		tuple.setActualTupleId(FogUtils.generateActualTupleId());
-		//System.out.println("Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
+		//OLA System.out.println(CloudSim.clock()+" : Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
 		
 		tuple.setDestOperatorId("spout");
-		TupleEmitTimes.getInstance().setEmitTime(tuple.getActualTupleId(), CloudSim.clock()+delay);
+		tuple.setSrcOperatorId("sensor");
+		tuple.setEmitTime(CloudSim.clock()+delay);
+		//TupleEmitTimes.getInstance().setEmitTime(tuple.getActualTupleId(), CloudSim.clock()+delay);
 		
 		send(gatewayDeviceId, delay, FogEvents.TUPLE_ARRIVAL,tuple);
 		
