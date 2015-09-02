@@ -240,7 +240,8 @@ public class FogDevice extends Datacenter {
 		getHost().getVmScheduler().deallocatePesForAllVms();
 		for(final Vm vm : getHost().getVmList()){
 			if(vm.getCloudletScheduler().runningCloudlets() > 0){
-				getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){{add(vm.getMips());}});
+				//getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){{add(vm.getMips());}});
+				getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){{add((double) getHost().getTotalMips());}});
 			}else{
 				getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){{add(0.0);}});
 			}
@@ -410,20 +411,31 @@ public class FogDevice extends Datacenter {
 		streamQueryMap.put(query.getQueryId(), query);
 	}
 
+	private void displayAllocatedMipsForOperators(){
+		System.out.println("-----------------------------------------");
+		for(Vm vm : getHost().getVmList()){
+			StreamOperator operator = (StreamOperator)vm;
+			System.out.println("Allocated MIPS for "+operator.getName()+" : "+getHost().getVmScheduler().getTotalAllocatedMipsForVm(operator));
+		}
+		System.out.println("-----------------------------------------");
+	}
+	
 	private void processTupleArrival(SimEvent ev){
 		
 		Tuple tuple = (Tuple)ev.getData();
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 		
-		/*if(getHost().getVmList().size() > 0){
+		if(getHost().getVmList().size() > 0){
 			final StreamOperator operator = (StreamOperator)getHost().getVmList().get(0);
 			if(CloudSim.clock() > 100){
 				getHost().getVmScheduler().deallocatePesForVm(operator);
-				getHost().getVmScheduler().allocatePesForVm(operator, new ArrayList<Double>(){{add(operator.getMips());}});
+				//getHost().getVmScheduler().allocatePesForVm(operator, new ArrayList<Double>(){{add(operator.getMips());}});
+				getHost().getVmScheduler().allocatePesForVm(operator, new ArrayList<Double>(){{add((double) getHost().getTotalMips());}});
 			}
-			System.out.println("Allocated MIPS : "+getHost().getVmScheduler().getTotalAllocatedMipsForVm(operator));
+			//displayAllocatedMipsForOperators();
 		}
-*/		
+		
+		
 //		System.out.println(CloudSim.clock()+"\ttuple ID " + tuple.getActualTupleId()+" length = "+tuple.getCloudletLength()+" received by "+getName()+" for operator "+tuple.getDestOperatorId());
 		/*for(Vm vm : getHost().getVmList()){
 			//System.out.println(getName()+"\t"+((StreamOperator)vm).getName()+"\t"+vm.getCurrentAllocatedMips()+"\t"+vm.getCurrentRequestedMips());
