@@ -26,8 +26,8 @@ public class Sensor extends SimEntity{
 		this.setQueryId(queryId);
 		this.gatewayDeviceId = gatewayDeviceId;
 		this.geoLocation = geoLocation;
-		this.length = 100;
-		this.fileSize = 3000;
+		this.length = 1000;
+		this.fileSize = 1000;
 		this.outputSize = 3;
 		this.setTransmitInterval(transmitInterval);
 		setUserId(userId);
@@ -44,7 +44,6 @@ public class Sensor extends SimEntity{
 		tuple.setSrcOperatorId("sensor");
 		tuple.setEmitTime(CloudSim.clock()+delay);
 		//TupleEmitTimes.getInstance().setEmitTime(tuple.getActualTupleId(), CloudSim.clock()+delay);
-		
 		send(gatewayDeviceId, delay, FogEvents.TUPLE_ARRIVAL,tuple);
 		
 		lastTransmitTime = CloudSim.clock();
