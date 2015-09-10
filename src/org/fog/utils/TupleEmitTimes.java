@@ -19,13 +19,13 @@ public class TupleEmitTimes {
 		getInstance().getTimeMap().get(tupleId).remove(tupleId);
 	}
 	
-	public static void setEmitTime(String queryId, int tupleId, double time){
+	public static void setLatency(String queryId, int tupleId, double time){
 		if(!getInstance().getTimeMap().containsKey(queryId))
 			getInstance().getTimeMap().put(queryId, new HashMap<Integer, Double>());
 		getInstance().getTimeMap().get(queryId).put(tupleId, time);
 	}
 	
-	public static double getEmitTime(String queryId, int tupleId){
+	public static double getLatency(String queryId, int tupleId){
 		return getInstance().getTimeMap().get(queryId).get(tupleId);
 	}
 	

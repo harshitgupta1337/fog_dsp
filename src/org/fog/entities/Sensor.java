@@ -26,7 +26,7 @@ public class Sensor extends SimEntity{
 		this.setQueryId(queryId);
 		this.gatewayDeviceId = gatewayDeviceId;
 		this.geoLocation = geoLocation;
-		this.length = 10000;
+		this.length = 100;
 		this.fileSize = 3000;
 		this.outputSize = 3;
 		this.setTransmitInterval(transmitInterval);
@@ -38,7 +38,7 @@ public class Sensor extends SimEntity{
 		Tuple tuple = new Tuple(getQueryId(), FogUtils.generateTupleId(), length, 1, fileSize, outputSize, new UtilizationModelFull(), new UtilizationModelFull(), new UtilizationModelFull());
 		tuple.setUserId(getUserId());
 		tuple.setActualTupleId(FogUtils.generateActualTupleId());
-		//OLA System.out.println(CloudSim.clock()+" : Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
+		//System.out.println((CloudSim.clock()+delay)+" : Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
 		
 		tuple.setDestOperatorId("spout");
 		tuple.setSrcOperatorId("sensor");

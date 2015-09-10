@@ -73,7 +73,7 @@ public class FogTest {
 		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0), 1000, 1);
 		
 		final FogDevice l1_02 = createFogDevice("level1-02", 1000, new GeoCoverage(-100, 0, -100, 100), 100, 1);
-		final FogDevice l1_13 = createFogDevice("level1-13", 1000, new GeoCoverage(0, 100, -100, 100), 100, 1);
+		final FogDevice l1_13 = createFogDevice("level1-13", 1000, new GeoCoverage(0, 100, -100, 100), 10, 1);
 		
 		final FogDevice cloud = createFogDevice("cloud", 10000, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
 		
@@ -87,7 +87,7 @@ public class FogTest {
 		
 		cloud.setParentId(-1);
 		
-		int transmitInterval = 80;
+		int transmitInterval = 2;
 		
 		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval);
 		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval);

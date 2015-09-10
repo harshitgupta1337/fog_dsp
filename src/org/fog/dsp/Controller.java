@@ -53,8 +53,8 @@ public class Controller extends SimEntity{
 
 	private void processTupleFinished(SimEvent ev) {
 		TupleFinishDetails details = (TupleFinishDetails)ev.getData();
-		TupleEmitTimes.setEmitTime(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
-		System.out.println(details.getActualTupleId()+"\t---->\t"+(details.getFinishTime()-details.getEmitTime()));
+		TupleEmitTimes.setLatency(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
+		//OLA1 System.out.println(CloudSim.clock()+" : "+details.getActualTupleId()+"\t---->\t"+(details.getFinishTime()-details.getEmitTime()));
 
 	}
 
