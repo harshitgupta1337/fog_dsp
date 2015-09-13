@@ -13,4 +13,6 @@ public class FogEvents {
 	public static final int UPDATE_RESOURCE_USAGE = BASE + 9;
 	public static final int UPDATE_TUPLE_QUEUE = BASE + 10;
 	public static final int TUPLE_FINISHED = BASE + 11;
+	public static final int ACTIVE_QUERY_UPDATE = BASE+12;
+	public static final int CONTROLLER_RESOURCE_MANAGE = BASE+13;
 }

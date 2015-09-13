@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.cloudbus.cloudsim.Host;
-import org.cloudbus.cloudsim.HostDynamicWorkload;
 import org.cloudbus.cloudsim.Log;
 import org.cloudbus.cloudsim.Pe;
 import org.cloudbus.cloudsim.Storage;
@@ -28,6 +27,7 @@ import org.fog.scheduler.StreamOperatorScheduler;
 import org.fog.scheduler.TupleScheduler;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
+import org.fog.utils.OperatorEdge;
 
 public class FogTestSingleOperatorSingleNode {
 
@@ -47,10 +47,11 @@ public class FogTestSingleOperatorSingleNode {
 			
 			FogBroker broker = new FogBroker("broker");
 			
-			List<FogDevice> fogDevices = createFogDevices(queryId, broker.getId());
+			int transmitInterval = 20;
+			List<FogDevice> fogDevices = createFogDevices(queryId, broker.getId(), transmitInterval);
 
 			
-			StreamQuery query = createStreamQuery(queryId, broker.getId());
+			StreamQuery query = createStreamQuery(queryId, broker.getId(), transmitInterval);
 			
 			Controller controller = new Controller("master-controller", fogDevices);
 			controller.submitStreamQuery(query);
@@ -66,7 +67,7 @@ public class FogTestSingleOperatorSingleNode {
 		}
 	}
 
-	private static List<FogDevice> createFogDevices(String queryId, int userId) {
+	private static List<FogDevice> createFogDevices(String queryId, int userId, int transmitInterval) {
 		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100), 10, 1);
 		
 		final FogDevice cloud = createFogDevice("cloud", 10000, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
@@ -75,7 +76,7 @@ public class FogTestSingleOperatorSingleNode {
 		
 		cloud.setParentId(-1);
 		
-		int transmitInterval = 20;
+		
 		
 		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval);
 		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval);
@@ -143,17 +144,17 @@ public class FogTestSingleOperatorSingleNode {
 		return fogdevice;
 	}
 	
-	private static StreamQuery createStreamQuery(String queryId, int userId){
+	private static StreamQuery createStreamQuery(String queryId, int userId, int transmitInterval){
 		int mips = 1000;
 		long size = 10000; // image size (MB)
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
-		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.1, 0.1);
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 0.1, 0.1, 1000, 1000, 1/((double)transmitInterval));
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout); }};
 		Map<String, String> edges = new HashMap<String, String>(){{}};
 		GeoCoverage geoCoverage = new GeoCoverage(-100, 0, 0, 100);
-		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage);
+		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage, new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor", "spout", 0.1));}});
 		
 		return query;
 	}

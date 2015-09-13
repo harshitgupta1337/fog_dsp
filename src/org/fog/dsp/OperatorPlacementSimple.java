@@ -50,11 +50,12 @@ public class OperatorPlacementSimple {
 		}
 		
 		while(remainingOperators.size() > 0){
-			//System.out.println("BOOO");
+
 			String operator = remainingOperators.get(0);
 			if(allChildrenMapped(operator)){
 				FogDevice currentDevice = getLowestSuitableDevice(operator);
 				while(true){
+
 					if(currentDevice != null){
 						if(canBeCreated(currentDevice, streamQuery.getOperatorByName(operator))){
 							operatorToDeviceMap.put(operator, currentDevice.getId());

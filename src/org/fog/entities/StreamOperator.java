@@ -28,6 +28,10 @@ public class StreamOperator extends Vm{
 	private String queryId;
 	private double expansionRatio;
 	private double fileExpansionRatio;
+	private double tupleLength;
+	private double sensorRate;
+	
+	private double tupleFileLength;
 	public StreamOperator(
 			int id,
 			String name,
@@ -42,7 +46,10 @@ public class StreamOperator extends Vm{
 			String vmm,
 			CloudletScheduler cloudletScheduler,
 			double expansionRatio,
-			double fileExpansionRatio) {
+			double fileExpansionRatio, 
+			double tupleLength, 
+			double tupleFileSize,
+			double sensorRate) {
 		super(id, userId, mips, 1, ram, bw, size, vmm, cloudletScheduler);
 		setName(name);
 		setId(id);
@@ -60,9 +67,11 @@ public class StreamOperator extends Vm{
 		setCloudletScheduler(cloudletScheduler);
 		setExpansionRatio(expansionRatio);
 		setFileExpansionRatio(fileExpansionRatio);
+		setTupleFileLength(tupleFileSize);
+		setTupleLength(tupleLength);
 		setInMigration(false);
 		setBeingInstantiated(true);
-
+		setSensorRate(sensorRate);
 		setCurrentAllocatedBw(0);
 		setCurrentAllocatedMips(null);
 		setCurrentAllocatedRam(0);
@@ -103,5 +112,23 @@ public class StreamOperator extends Vm{
 	}
 	public void setFileExpansionRatio(double fileExpansionRatio) {
 		this.fileExpansionRatio = fileExpansionRatio;
+	}
+	public double getTupleLength() {
+		return tupleLength;
+	}
+	public void setTupleLength(double tupleLength) {
+		this.tupleLength = tupleLength;
+	}
+	public double getTupleFileLength() {
+		return tupleFileLength;
+	}
+	public void setTupleFileLength(double tupleFileLength) {
+		this.tupleFileLength = tupleFileLength;
+	}
+	public double getSensorRate() {
+		return sensorRate;
+	}
+	public void setSensorRate(double sensorRate) {
+		this.sensorRate = sensorRate;
 	}
 }

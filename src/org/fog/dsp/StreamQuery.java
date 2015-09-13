@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.fog.entities.StreamOperator;
 import org.fog.utils.GeoCoverage;
+import org.fog.utils.OperatorEdge;
 
 public class StreamQuery {
 
@@ -13,9 +14,11 @@ public class StreamQuery {
 	private Map<String, String> edges;
 	private GeoCoverage geoCoverage;
 	private String queryId;
+	private List<OperatorEdge> operatorEdges;
 	
-	public StreamQuery(String queryId, List<StreamOperator> operators, Map<String, String> edges, GeoCoverage geoCoverage){
+	public StreamQuery(String queryId, List<StreamOperator> operators, Map<String, String> edges, GeoCoverage geoCoverage, List<OperatorEdge> operatorEdges){
 		this.operators = operators;
+		this.setOperatorEdges(operatorEdges);
 		this.edges = edges;
 		this.geoCoverage = geoCoverage;
 		setQueryId(queryId);
@@ -29,6 +32,14 @@ public class StreamQuery {
 		return null;
 	}
 
+	public double getSelectivity(String operator, String srcOperator){
+		for(OperatorEdge edge : operatorEdges){
+			if(edge.getSrc().equals(srcOperator) && edge.getDst().equals(operator))
+				return edge.getSelectivity();
+		}
+		return 0;
+	}
+	
 	public StreamOperator getNextOperator(String name){
 		return getOperatorByName(edges.get(name));
 	}
@@ -44,13 +55,27 @@ public class StreamQuery {
 		return leaves;
 	}
 	
+	public boolean isLeafOperator(String operatorName){
+		if(edges.containsValue(operatorName))
+			return false;
+		else
+			return true;
+		
+	}
+	
 	public List<String> getAllChildren(String name){
 		List<String> children = new ArrayList<String>();
 		for(String operatorName : edges.keySet()){
 			if(edges.get(operatorName).equals(name))
 				children.add(operatorName);
 		}
+		if(isLeafOperator(name))
+			children.add("sensor");
 		return children;
+	}
+	
+	public String getParentOperator(String name){
+		return edges.get(name);
 	}
 	
 	public List<StreamOperator> getOperators() {
@@ -83,6 +108,14 @@ public class StreamQuery {
 
 	public void setQueryId(String queryId) {
 		this.queryId = queryId;
+	}
+
+	public List<OperatorEdge> getOperatorEdges() {
+		return operatorEdges;
+	}
+
+	public void setOperatorEdges(List<OperatorEdge> operatorEdges) {
+		this.operatorEdges = operatorEdges;
 	}
 	
 	
