@@ -176,7 +176,6 @@ public class OperatorPlacementTrafficIntensity extends OperatorPlacement{
 	}
 	protected void calculateOutputRates(){
 		while(true){
-			System.out.println("1");
 			for(StreamOperator operator : getStreamQuery().getOperators()){
 				double outputRate = calculateOutputRate(operator.getName());
 				System.out.println(outputRate);
