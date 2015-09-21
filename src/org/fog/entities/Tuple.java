@@ -11,6 +11,7 @@ public class Tuple extends Cloudlet{
 	private String sensorName;
 	private int actualTupleId;
 	private double emitTime;
+	private String sensorType;
 	public Tuple(String queryId, int cloudletId, long cloudletLength, int pesNumber,
 			long cloudletFileSize, long cloudletOutputSize,
 			UtilizationModel utilizationModelCpu,
@@ -68,6 +69,14 @@ public class Tuple extends Cloudlet{
 
 	public void setEmitTime(double emitTime) {
 		this.emitTime = emitTime;
+	}
+
+	public String getSensorType() {
+		return sensorType;
+	}
+
+	public void setSensorType(String sensorType) {
+		this.sensorType = sensorType;
 	}
 
 }

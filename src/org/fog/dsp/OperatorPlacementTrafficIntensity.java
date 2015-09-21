@@ -28,6 +28,7 @@ public class OperatorPlacementTrafficIntensity extends OperatorPlacement{
 	protected Map<String, Double> operatorOutputRate;
 	
 	public OperatorPlacementTrafficIntensity(List<FogDevice> fogDevices, StreamQuery streamQuery){
+		super(fogDevices, streamQuery);
 		this.setFogDevices(fogDevices);
 		this.setStreamQuery(streamQuery);
 		setTrafficIntensity(new HashMap<Integer, Double>());
@@ -118,7 +119,6 @@ public class OperatorPlacementTrafficIntensity extends OperatorPlacement{
 		List<String> children = getStreamQuery().getAllChildren(streamOperator.getName());
 		for(String child : children){
 			if(getOperatorToDeviceMap().containsKey(child) && getOperatorToDeviceMap().get(child)==fogDevice.getId()){
-				System.out.println("TTTTTTTTTT"+child);
 				currentTraffic -= operatorOutputRate.get(child)*getStreamQuery().getOperatorByName(child).getTupleFileLength();
 			}
 		}

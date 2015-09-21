@@ -1,8 +1,10 @@
 package org.fog.dsp;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.cloudbus.cloudsim.core.CloudSim;
 import org.fog.entities.FogDevice;
 import org.fog.entities.StreamOperator;
 import org.fog.utils.OperatorEdge;
@@ -14,6 +16,11 @@ public abstract class OperatorPlacement {
 	private Map<String, Integer> operatorToDeviceMap;
 	private FogDevice lowestDevice;
 	
+	public OperatorPlacement(List<FogDevice> fogDevices, StreamQuery streamQuery){
+		setFogDevices(fogDevices);
+		setStreamQuery(streamQuery);
+	}
+	
 	protected FogDevice getLowestSuitableDevice(String operator){
 		List<String> children = streamQuery.getAllChildren(operator);
 		FogDevice highestChildrenHolder = getLowestDevice();
@@ -22,6 +29,17 @@ public abstract class OperatorPlacement {
 				highestChildrenHolder = getDeviceById(operatorToDeviceMap.get(child));
 		}
 		return highestChildrenHolder;
+	}
+	
+	protected List<Integer> getFogDevicesForInitialPlacement(){
+		List<Integer> devices = new ArrayList<Integer>();
+		int lowest = getLowestCoveringFogDevice(getFogDevices(), getStreamQuery()).getId();
+		int id = lowest;
+		while(id > -1){
+			devices.add(id);
+			id = ((FogDevice)CloudSim.getEntity(id)).getParentId();
+		}
+		return devices;
 	}
 	
 	protected boolean allChildrenMapped(String operator){
@@ -59,10 +77,10 @@ public abstract class OperatorPlacement {
 	
 	protected FogDevice getLowestCoveringFogDevice(List<FogDevice> fogDevices, StreamQuery streamQuery){
 		FogDevice coverer = null;
-		System.out.println("Fog Devices "+fogDevices);
+		//System.out.println("Fog Devices "+fogDevices);
 		for(FogDevice fogDevice : fogDevices){
-			System.out.println("Device "+fogDevice.getGeoCoverage());
-			System.out.println("Query "+streamQuery.getGeoCoverage());
+			//System.out.println("Device "+fogDevice.getGeoCoverage());
+			//System.out.println("Query "+streamQuery.getGeoCoverage());
 			if(fogDevice.getGeoCoverage().covers(streamQuery.getGeoCoverage())){
 				if(coverer == null)
 					coverer = fogDevice;

@@ -23,8 +23,12 @@ public class TupleScheduler extends CloudletSchedulerTimeShared{
 		
 		/*>>>>>>>>>>>>>>>>>>>>*/
 		/* edit made by HARSHIT GUPTA */
+		
+		//System.out.println("ALLOCATED MIPS FOR CLOUDLET = "+getTotalCurrentAllocatedMipsForCloudlet(rcl, time));
 		return time
 				+ ((rcl.getRemainingCloudletLength()) / getTotalCurrentAllocatedMipsForCloudlet(rcl, time));
+		
+		
 				
 		//return ((rcl.getRemainingCloudletLength()) / getTotalCurrentAllocatedMipsForCloudlet(rcl, time));
 		/*end of edit*/

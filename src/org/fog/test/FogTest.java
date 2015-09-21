@@ -89,18 +89,21 @@ public class FogTest {
 		l1_13.setParentId(cloud.getId());
 		
 		cloud.setParentId(-1);
+		
+		int tupleCpuSize = 1000;
+		int tupleNwSize = 1000;
 				
-		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval);
+		Sensor sensor01 = new Sensor("sensor0-1", userId, queryId, gw0.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
+		Sensor sensor02 = new Sensor("sensor0-2", userId, queryId, gw0.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
 		
-		Sensor sensor11 = new Sensor("sensor1-1", userId, queryId, gw1.getId(), null, transmitInterval);
-		Sensor sensor12 = new Sensor("sensor1-2", userId, queryId, gw1.getId(), null, transmitInterval);
+		Sensor sensor11 = new Sensor("sensor1-1", userId, queryId, gw1.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
+		Sensor sensor12 = new Sensor("sensor1-2", userId, queryId, gw1.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
 		
-		Sensor sensor21 = new Sensor("sensor2-1", userId, queryId, gw2.getId(), null, transmitInterval);
-		Sensor sensor22 = new Sensor("sensor2-2", userId, queryId, gw2.getId(), null, transmitInterval);
+		Sensor sensor21 = new Sensor("sensor2-1", userId, queryId, gw2.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
+		Sensor sensor22 = new Sensor("sensor2-2", userId, queryId, gw2.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
 		
-		Sensor sensor31 = new Sensor("sensor3-1", userId, queryId, gw3.getId(), null, transmitInterval);
-		Sensor sensor32 = new Sensor("sensor3-2", userId, queryId, gw3.getId(), null, transmitInterval);
+		Sensor sensor31 = new Sensor("sensor3-1", userId, queryId, gw3.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
+		Sensor sensor32 = new Sensor("sensor3-2", userId, queryId, gw3.getId(), null, transmitInterval, tupleCpuSize, tupleNwSize);
 
 		List<FogDevice> fogDevices = new ArrayList<FogDevice>(){{add(gw0);add(gw1);add(gw2);add(gw3);add(l1_02);add(l1_13);add(cloud);}};
 		return fogDevices;

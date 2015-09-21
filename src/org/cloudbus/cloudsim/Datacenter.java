@@ -17,6 +17,7 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
+import org.fog.entities.Tuple;
 
 /**
  * Datacenter class is a CloudResource whose hostList are virtualized. It deals with processing of
@@ -721,15 +722,16 @@ public class Datacenter extends SimEntity {
 			Host host = getVmAllocationPolicy().getHost(vmId, userId);
 			Vm vm = host.getVm(vmId, userId);
 			CloudletScheduler scheduler = vm.getCloudletScheduler();
+			//System.out.println(scheduler);
 			double estimatedFinishTime = scheduler.cloudletSubmit(cl, fileTransferTime);
 			//System.out.println(CloudSim.clock()+" : Received tuple ID "+((Tuple)cl).getActualTupleId()+" estimated finish time "+estimatedFinishTime);
 
 			// if this cloudlet is in the exec queue
 			if (estimatedFinishTime > 0.0 && !Double.isInfinite(estimatedFinishTime)) {
 				estimatedFinishTime += fileTransferTime;
-
 				/*	edited by HARSHIT	*/
-				send(getId(), estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
+				send(getId(), CloudSim.getMinTimeBetweenEvents()
+						+estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
 				/*	edit done	*/
 			}
 

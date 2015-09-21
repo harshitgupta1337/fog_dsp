@@ -9,6 +9,10 @@ public class FogUtils {
 		return TUPLE_ID++;
 	}
 	
+	public static String getSensorTypeFromSensorName(String sensorName){
+		return sensorName.substring(sensorName.indexOf('-')+1, sensorName.lastIndexOf('-'));
+	}
+	
 	public static int generateEntityId(){
 		return ENTITY_ID++;
 	}
@@ -19,5 +23,5 @@ public class FogUtils {
 	
 	public static int USER_ID = 1;
 	
-	public static int MAX = 10000;
+	public static int MAX = 10000000;
 }

@@ -30,6 +30,7 @@ public class StreamOperator extends Vm{
 	private double fileExpansionRatio;
 	private double tupleLength;
 	private double sensorRate;
+	private String sensorType;
 	
 	private double tupleFileLength;
 	public StreamOperator(
@@ -130,5 +131,11 @@ public class StreamOperator extends Vm{
 	}
 	public void setSensorRate(double sensorRate) {
 		this.sensorRate = sensorRate;
+	}
+	public String getSensorType() {
+		return sensorType;
+	}
+	public void setSensorType(String sensorType) {
+		this.sensorType = sensorType;
 	}
 }

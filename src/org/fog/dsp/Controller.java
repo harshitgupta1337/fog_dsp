@@ -9,6 +9,7 @@ import java.util.Queue;
 import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
+import org.fog.dsp.bruteforce.OperatorPlacementBruteForce;
 import org.fog.entities.FogDevice;
 import org.fog.entities.StreamOperator;
 import org.fog.utils.FogEvents;
@@ -75,7 +76,7 @@ public class Controller extends SimEntity{
 	
 	protected boolean queryNeedsHelp(String queryId){
 		double averageLatency = calculateAverageTupleLatency(queryId);
-		System.out.println("Average latency for "+queryId+" = "+averageLatency);
+		//System.out.println("Average latency for "+queryId+" = "+averageLatency);
 		return false;
 	}
 	
@@ -99,7 +100,7 @@ public class Controller extends SimEntity{
 			getTupleLatencyByQuery().get(details.getQueryId()).remove();
 		getTupleLatencyByQuery().get(details.getQueryId()).add(latency);
 		TupleEmitTimes.setLatency(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
-		System.out.println(CloudSim.clock()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
+		System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
 	}
 
 	@Override
@@ -122,7 +123,7 @@ public class Controller extends SimEntity{
 		System.out.println("Submitted query");
 		getQueries().put(query.getQueryId(), query);
 		getTupleLatencyByQuery().put(query.getQueryId(), new LinkedList<Double>());
-		Map<String, Integer> allocationMap = (new OperatorPlacementTrafficIntensity(fogDevices, query)).getOperatorToDeviceMap();
+		Map<String, Integer> allocationMap = (new OperatorPlacementOnlyCloud(fogDevices, query)).getOperatorToDeviceMap();
 		for(FogDevice fogDevice : fogDevices){
 			sendNow(fogDevice.getId(), FogEvents.ACTIVE_QUERY_UPDATE, query);
 		}
@@ -131,7 +132,6 @@ public class Controller extends SimEntity{
 			StreamOperator operator = query.getOperatorByName(operatorName);
 			System.out.println("Operator "+operator.getName()+" has been placed on "+allocationMap.get(operatorName));
 			System.out.println(CloudSim.getEntityName(allocationMap.get(operatorName)));
-			System.out.println(operator);
 
 			sendNow(allocationMap.get(operatorName), FogEvents.QUERY_SUBMIT, query);
 			

@@ -6,12 +6,13 @@ public class TupleFinishDetails {
 	private int actualTupleId;
 	private double emitTime;
 	private double finishTime;
-	
-	public TupleFinishDetails(String queryId, int actualTupleId, double emitTime, double finishTime){
+	private String sensorType;
+	public TupleFinishDetails(String queryId, int actualTupleId, double emitTime, double finishTime, String sensorType){
 		this.queryId = queryId;
 		this.actualTupleId = actualTupleId;
 		this.emitTime = emitTime;
 		this.finishTime = finishTime;
+		this.sensorType = sensorType;
 	}
 	
 	public String getQueryId() {
@@ -37,6 +38,14 @@ public class TupleFinishDetails {
 	}
 	public void setFinishTime(double finishTime) {
 		this.finishTime = finishTime;
+	}
+
+	public String getSensorType() {
+		return sensorType;
+	}
+
+	public void setSensorType(String sensorType) {
+		this.sensorType = sensorType;
 	}
 	
 }

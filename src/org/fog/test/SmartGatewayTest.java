@@ -48,12 +48,17 @@ public class SmartGatewayTest {
 			FogBroker broker = new FogBroker("broker");
 			
 			int transmitInterval = 10;
-			
-			List<FogDevice> fogDevices = createFogDevices(queryId, broker.getId(), transmitInterval);
+			int sensorTupleCpuSize = 100000;
+			int sensorTupleNwSize = 1000;
 
+			StreamQuery query = createStreamQuery(queryId, broker.getId(), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+
+			List<FogDevice> fogDevices = createFogDevices(queryId, broker.getId(), transmitInterval);
 			
-			StreamQuery query = createStreamQuery(queryId, broker.getId(), transmitInterval);
-			
+			for(int i=0;i<4;i++){
+				createSensor("sensor-TYPE-"+i, query, broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+			}
+
 			Controller controller = new Controller("master-controller", fogDevices);
 			System.out.println("Yo");
 			controller.submitStreamQuery(query);
@@ -70,22 +75,19 @@ public class SmartGatewayTest {
 		}
 	}
 
+	private static void createSensor(String sensorName, StreamQuery query, int userId, int parentId, int transmitInterval, int tupleCpuSize, int tupleNwSize){
+		Sensor sensor0 = new Sensor(sensorName, userId, query.getQueryId(), parentId, null, transmitInterval, tupleCpuSize, tupleNwSize, "TYPE");
+		query.registerSensor(sensor0);
+		
+	}
+	
 	private static List<FogDevice> createFogDevices(String queryId, int userId, int transmitInterval) {
 		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 100, -100, 100), 1000, 1);
 		
-		final FogDevice cloud = createFogDevice("cloud", 10000, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), FogUtils.MAX, 0);
+		final FogDevice cloud = createFogDevice("cloud", FogUtils.MAX, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), FogUtils.MAX, 0);
 		
 		gw0.setParentId(cloud.getId());
 		cloud.setParentId(-1);
-				
-		Sensor sensor0 = new Sensor("sensor0", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor1 = new Sensor("sensor1", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor2 = new Sensor("sensor2", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor3 = new Sensor("sensor3", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor4 = new Sensor("sensor4", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor5 = new Sensor("sensor5", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor6 = new Sensor("sensor6", userId, queryId, gw0.getId(), null, transmitInterval);
-		Sensor sensor7 = new Sensor("sensor7", userId, queryId, gw0.getId(), null, transmitInterval);
 
 		List<FogDevice> fogDevices = new ArrayList<FogDevice>(){{add(gw0);add(cloud);}};
 		return fogDevices;
@@ -150,17 +152,17 @@ public class SmartGatewayTest {
 		return fogdevice;
 	}
 	
-	private static StreamQuery createStreamQuery(String queryId, int userId, int transmitInterval){
+	private static StreamQuery createStreamQuery(String queryId, int userId, int transmitInterval, int sensorTupleCpuSize, int sensorTupleNwSize){
 		int mips = 1000;
 		long size = 10000; // image size (MB)
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
-		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "sensor", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 100, 10000, 4/((double)transmitInterval));
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "TYPE", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, sensorTupleCpuSize, sensorTupleNwSize, 4/((double)transmitInterval));
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);}};
 		Map<String, String> edges = new HashMap<String, String>(){{}};
 		GeoCoverage geoCoverage = new GeoCoverage(-100, 100, -100, 100);
-		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor", "spout", 0.1));}};
+		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("TYPE", "spout", 0.1));}};
 		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage, operatorEdges);
 		
 		return query;

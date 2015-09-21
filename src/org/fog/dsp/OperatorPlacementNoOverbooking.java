@@ -10,6 +10,7 @@ import org.fog.entities.StreamOperator;
 public class OperatorPlacementNoOverbooking extends OperatorPlacement{
 
 	public OperatorPlacementNoOverbooking(List<FogDevice> fogDevices, StreamQuery streamQuery){
+		super(fogDevices, streamQuery);
 		this.setFogDevices(fogDevices);
 		this.setStreamQuery(streamQuery);
 		
