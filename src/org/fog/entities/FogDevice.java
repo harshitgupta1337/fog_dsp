@@ -250,20 +250,18 @@ public class FogDevice extends Datacenter {
 		
 		// NOW, cpuLoad REPRESENTS THE LOAD ON CPU INCURRED BY operators IF THEY ARE MOVED TO childId
 		
-		System.out.println(getName()+"\t"+CloudSim.getEntityName(childDeviceId)+"\t"+cpuLoad);
+		//System.out.println(getName()+"\t"+CloudSim.getEntityName(childDeviceId)+"\t"+cpuLoad);
+		
+		if((cpuLoad+resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips())/resourceUsageDetails.getMips() <= 1)
+			return true;
 		
 		return false;
 	}
 	
 	protected boolean canBeSentTo(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId){
-		canBeSentToCpu(operators, childDeviceId, resourceUsageDetails, queryId);
-		for(String operator : operators){
-			
-			/*if(getInputTupleTimesByChildOperatorAndNode().containsKey(new Pair<String, Integer>(operator, childDeviceId))){
-				getInputRateByChildOperatorAndNode(operator, childNodeId)
-			}*/
-		}
-		return false;
+		boolean cpu = canBeSentToCpu(operators, childDeviceId, resourceUsageDetails, queryId);
+		//TODO cpu sending condition needs to be improved. N/w sending conditions need to be added.
+		return cpu;
 	}
 	
 	/**
@@ -272,9 +270,9 @@ public class FogDevice extends Datacenter {
 	 */
 	private void processResourceUsage(SimEvent ev) {
 		
-		for(Pair<String, Integer> pair : getInputTupleTimesByChildOperatorAndNode().keySet()){
+		/*for(Pair<String, Integer> pair : getInputTupleTimesByChildOperatorAndNode().keySet()){
 			System.out.println(pair.getFirst()+"\t"+CloudSim.getEntityName(pair.getSecond())+"\t---->\t"+getInputRateByChildOperatorAndNode(pair.getFirst(), pair.getSecond()));
-		}
+		}*/
 		
 		// TODO Process resource usage to send operators to child sending it
 		ResourceUsageDetails resourceUsageDetails = (ResourceUsageDetails)ev.getData();
@@ -297,6 +295,8 @@ public class FogDevice extends Datacenter {
 				for(List<String> set : sets){	
 					if(canBeSentTo(set, childId, resourceUsageDetails, queryId)){
 						//TODO what if set of operators can be sent to child ?
+						sendOperatorsToChild(queryId, set, childId);
+						break;
 					}
 				}
 			}
@@ -337,7 +337,16 @@ public class FogDevice extends Datacenter {
 	
 	private void sendOperatorsToChild(String queryId, List<String> operators, int deviceId) {
 		// TODO Send operators to child fog device
+		System.out.println("YOYO"+operators);
+		FogDevice fogDevice = (FogDevice)CloudSim.getEntity(deviceId);
 		
+		sendNow(deviceId, FogEvents.QUERY_SUBMIT, getStreamQueryMap().get(queryId));
+		
+		for(String operator : operators){
+			StreamOperator streamOperator = getStreamQueryMap().get(queryId).getOperatorByName(operator);
+			fogDevice.getVmAllocationPolicy().allocateHostForVm(streamOperator);
+			sendNow(deviceId, FogEvents.LAUNCH_OPERATOR, streamOperator);
+		}
 	}
 
 	/**
@@ -720,6 +729,8 @@ public class FogDevice extends Datacenter {
 				int vmId = streamQueryMap.get(tuple.getQueryId()).getOperatorByName(tuple.getDestOperatorId()).getId();
 				//System.out.println(CloudSim.clock()+" : Tuple ID " + tuple.getActualTupleId()+" received by "+getName()+" for operator "+tuple.getDestOperatorId());
 				tuple.setVmId(vmId);
+				System.out.println(getName()+"\t"+tuple.getDestOperatorId()+"\t"+CloudSim.getEntityName(ev.getSource()));
+				System.out.println(getName()+"\t"+calculateCpuLoad());
 				updateInputTupleCount(ev.getSource(), tuple.getDestOperatorId());
 				updateInputTupleCountByChildOperator(tuple.getDestOperatorId(), tuple.getSrcOperatorId());
 				//System.out.println("Tuple from operator "+tuple.getSrcOperatorId()+" from node "+ CloudSim.getEntityName(ev.getSource()));
