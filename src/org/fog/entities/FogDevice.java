@@ -2,10 +2,12 @@ package org.fog.entities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.Cloudlet;
@@ -21,6 +23,7 @@ import org.fog.dsp.StreamQuery;
 import org.fog.utils.FogEvents;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
+import org.fog.utils.ResourceUsageDetails;
 import org.fog.utils.TupleFinishDetails;
 
 public class FogDevice extends Datacenter {
@@ -28,6 +31,7 @@ public class FogDevice extends Datacenter {
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 10;
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
 	private static double INPUT_RATE_TIME = 1000;
+	private static double ADAPTIVE_INTERVAL = 1000;
 	
 	private Queue<Tuple> outgoingTupleQueue;
 	private boolean isOutputLinkBusy;
@@ -69,6 +73,8 @@ public class FogDevice extends Datacenter {
 	 */
 	private List<Integer> childrenIds;
 
+	private Map<Integer, List<String>> childToOperatorsMap;
+	
 	public FogDevice(
 			String name, 
 			GeoCoverage geoCoverage,
@@ -122,6 +128,8 @@ public class FogDevice extends Datacenter {
 		this.outputTupleTimesByOperator = new HashMap<String, Queue<Double>>();
 		this.intermediateTupleTimesByOperator = new HashMap<String, Queue<Double>>();
 		this.outputTupleLengthsByOperator = new HashMap<String, Double>();
+		setChildrenIds(new ArrayList<Integer>());
+		setChildToOperatorsMap(new HashMap<Integer, List<String>>());
 	}
 
 	/**
@@ -133,6 +141,7 @@ public class FogDevice extends Datacenter {
 	 */
 	protected void registerOtherEntity() {
 		updateResourceUsage();
+		performAdativeReplacement(null);
 	}
 	
 	@Override
@@ -161,11 +170,101 @@ public class FogDevice extends Datacenter {
 			break;
 		case FogEvents.ACTIVE_QUERY_UPDATE:
 			updateActiveQueries(ev);
+			break;
+		case FogEvents.ADAPTIVE_OPERATOR_REPLACEMENT:
+			performAdativeReplacement(ev);
+			break;
+		case FogEvents.GET_RESOURCE_USAGE:
+			sendResourceUsage();
+			break;
+		case FogEvents.RESOURCE_USAGE:
+			processResourceUsage(ev);
+			break;
 		default:
 			break;
 		}
 	}
 	
+	protected boolean canBeSentTo(String operator, int childDeviceId, ResourceUsageDetails resourceUsageDetails){
+		return false;
+	}
+	
+	/**
+	 * Process resource usage of child and decide whether to send operators to that child or not
+	 * @param ev
+	 */
+	private void processResourceUsage(SimEvent ev) {
+		// TODO Process resource usage to send operators to child sending it
+		ResourceUsageDetails resourceUsageDetails = (ResourceUsageDetails)ev.getData();
+		//compute sets of operators which can be sent to children
+		Map<String, List<StreamOperator>> map = new HashMap<String, List<StreamOperator>>();
+		for(Vm vm : getHost().getVmList()){
+			StreamOperator streamOperator = (StreamOperator)vm;
+			if(map.containsKey(streamOperator.getQueryId()))
+				map.get(streamOperator.getQueryId()).add(streamOperator);
+			else{
+				map.put(streamOperator.getQueryId(), new ArrayList<StreamOperator>());
+				map.get(streamOperator.getQueryId()).add(streamOperator);
+			}
+		}
+		for(String queryId : map.keySet()){
+			List<List<String>> sets = generateSets(queryId, map);
+			System.out.println(getName()+" : "+queryId+" : "+sets);
+			for(List<String> set : sets){
+				//TODO
+			}
+		}
+	}
+
+	private List<List<String>> generateSets(String queryId, Map<String, List<StreamOperator>> map){
+		StreamQuery query = streamQueryMap.get(queryId);
+		List<List<String>> sets = new ArrayList<List<String>>();
+			
+		for(StreamOperator operator : map.get(queryId)){
+			List<String> set = new ArrayList<String>();
+			set.add(operator.getName());
+				
+			for(StreamOperator operator1 : map.get(queryId)){
+				if(query.isAncestorOperator(operator.getName(), operator1.getName()))
+					set.add(operator1.getName());
+			}
+			sets.add(set);
+		}
+		return sets;
+	}
+	
+	private void sendOperatorsToChild(String queryId, List<String> operators, int deviceId) {
+		// TODO Send operators to child fog device
+		
+	}
+
+	/**
+	 * Sends the resource usage details to it's parent.
+	 * @param ev
+	 */
+	private void sendResourceUsage() {
+		sendNow(getParentId(), FogEvents.RESOURCE_USAGE, new ResourceUsageDetails(getHost().getTotalMips(), 
+				getUplinkBandwidth(), calculateCpuLoad(), getTrafficIntensity()));
+	}
+	
+	/**
+	 * Checks whether the set of operators can be replaced on the child fog device
+	 * @param operators the operators to be replaced
+	 * @param childId the ID of child fog device
+	 * @return
+	 */
+	protected boolean canSendOperatorsToChild(Set<String> operators, int childId){
+		
+		return false;
+	}
+	
+	protected void performAdativeReplacement(SimEvent ev){
+		//System.out.println(getName()+"\tADAPTIVE REPLACEMENT");
+		for(int childId : getChildrenIds()){
+			sendNow(childId, FogEvents.GET_RESOURCE_USAGE);
+		}
+		send(getId(), ADAPTIVE_INTERVAL, FogEvents.ADAPTIVE_OPERATOR_REPLACEMENT);
+	}
 	
 	private void updateActiveQueries(SimEvent ev) {
 		StreamQuery streamQuery = (StreamQuery)ev.getData();
@@ -263,10 +362,13 @@ public class FogDevice extends Datacenter {
 		getHost().getVmScheduler().deallocatePesForAllVms();
 		for(final Vm vm : getHost().getVmList()){
 			if(vm.getCloudletScheduler().runningCloudlets() > 0 || ((StreamOperator)vm).getName().equals(incomingOperator)){
-				//getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){{add(vm.getMips());}});
-				getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){{add((double) getHost().getTotalMips());}});
+				getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){
+					private static final long serialVersionUID = 1L;
+				{add((double) getHost().getTotalMips());}});
 			}else{
-				getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){{add(0.0);}});
+				getHost().getVmScheduler().allocatePesForVm(vm, new ArrayList<Double>(){
+					private static final long serialVersionUID = 1L;
+				{add(0.0);}});
 			}
 		}
 		for(final Vm vm : getHost().getVmList()){
@@ -279,11 +381,6 @@ public class FogDevice extends Datacenter {
 	}
 	
 	private void updateUtils(){
-		//TRAFFIC if(getName().equals("gateway-0"))
-		/*System.out.println(getName()+"------->"+getOutputTupleRate("sensor-TYPE-"));
-		System.out.println(getName()+"------->"+getOutputTupleRate("sensor-TYPE-"));
-		*///TRAFFIC 	System.out.println(getName()+" : Traffic Intensity : "+getTrafficIntensity());
-		double total = 0;
 		for(Vm vm : getHost().getVmList()){
 			StreamOperator operator = (StreamOperator)vm;
 			if(utilization.get(operator.getName()).size() > RESOURCE_USAGE_VECTOR_SIZE){
@@ -295,7 +392,6 @@ public class FogDevice extends Datacenter {
 			
 			//System.out.println(CloudSim.clock()+":\t"+operator.getName()+"\t\t"+operator.getCurrentRequestedMips());
 			
-			total += getUtilizationOfOperator(operator.getName());
 			
 			/*System.out.println(getName()+"\t"+operator.getName()+"\tINPUT RATE\t"+getInputTupleRate(operator.getName()));
 			System.out.println(getName()+"\t"+operator.getName()+"\tINTER RATE\t"+getIntermediateTupleRate(operator.getName()));
@@ -316,7 +412,6 @@ public class FogDevice extends Datacenter {
 			
 		}
 		trafficIntensity /= getUplinkBandwidth();
-		
 		return trafficIntensity;
 	}
 	
@@ -338,9 +433,7 @@ public class FogDevice extends Datacenter {
 	private void updateResourceUsage(){
 		updateUtils();
 		updateInputRate();
-		//TODO
 		updateInputRateByChildOperator();
-		
 		send(getId(), RESOURCE_USAGE_COLLECTION_INTERVAL, FogEvents.UPDATE_RESOURCE_USAGE);
 	}
 	
@@ -467,18 +560,22 @@ public class FogDevice extends Datacenter {
 		System.out.println("-----------------------------------------");
 	}
 	
+	private void addChild(int childId){
+		if(!getChildrenIds().contains(childId) && childId != getId())
+			getChildrenIds().add(childId);
+	}
+	
 	private void processTupleArrival(SimEvent ev){
-		
 		Tuple tuple = (Tuple)ev.getData();
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
-		
+		addChild(ev.getSource());
 		if(getHost().getVmList().size() > 0){
 			final StreamOperator operator = (StreamOperator)getHost().getVmList().get(0);
 			if(CloudSim.clock() > 100){
 				getHost().getVmScheduler().deallocatePesForVm(operator);
-				//getHost().getVmScheduler().allocatePesForVm(operator, new ArrayList<Double>(){{add(operator.getMips());}});
-				getHost().getVmScheduler().allocatePesForVm(operator, new ArrayList<Double>(){{add((double) getHost().getTotalMips());}});
-				//displayAllocatedMipsForOperators();
+				getHost().getVmScheduler().allocatePesForVm(operator, new ArrayList<Double>(){
+					private static final long serialVersionUID = 1L;
+				{add((double) getHost().getTotalMips());}});
 			}
 		}
 		
@@ -512,7 +609,6 @@ public class FogDevice extends Datacenter {
 		double load = 0;
 		for(Pair<String, String> pair : inputRateByChildOperator.keySet()){
 			load += getInputTupleRateByChildOperator(pair.getSecond(), pair.getFirst())*tupleLengthByChildOperator.get(pair);
-			//OLA1 System.out.println("++++"+load);
 		}
 		load /= getHost().getTotalMips();
 		return load;
@@ -532,12 +628,11 @@ public class FogDevice extends Datacenter {
 	}
 
 	private void processSensorJoining(SimEvent ev){
-		//TODO
+		//TODO Process sensor joining
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 	}
 	
 	private void executeTuple(SimEvent ev, String operatorId){
-		Tuple tuple = (Tuple)ev.getData();
 		updateAllocatedMips(operatorId);
 		//displayAllocatedMipsForOperators();
 		processCloudletSubmit(ev, false);
@@ -638,120 +733,95 @@ public class FogDevice extends Datacenter {
 			}
 		}
 	}
-	
 	private void sendToSelf(Tuple tuple){
 		send(getId(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ARRIVAL, tuple);
 	}
-	
 	public Host getHost(){
 		return getHostList().get(0);
 	}
-	
 	public int getParentId() {
 		return parentId;
 	}
-
 	public void setParentId(int parentId) {
 		this.parentId = parentId;
 	}
-
 	public List<Integer> getChildrenIds() {
 		return childrenIds;
 	}
-
 	public void setChildrenIds(List<Integer> childrenIds) {
 		this.childrenIds = childrenIds;
 	}
-
 	public Map<String, StreamQuery> getStreamQueryMap() {
 		return streamQueryMap;
 	}
-
 	public void setStreamQueryMap(Map<String, StreamQuery> streamQueryMap) {
 		this.streamQueryMap = streamQueryMap;
 	}
-
 	public GeoCoverage getGeoCoverage() {
 		return geoCoverage;
 	}
-
 	public void setGeoCoverage(GeoCoverage geoCoverage) {
 		this.geoCoverage = geoCoverage;
 	}
-
 	public double getMissRate() {
 		return missRate;
 	}
-
 	public void setMissRate(double missRate) {
 		this.missRate = missRate;
-	}
-
-	public double getUplinkBandwidth() {
+	}	public double getUplinkBandwidth() {
 		return uplinkBandwidth;
 	}
-
 	public void setUplinkBandwidth(double uplinkBandwidth) {
 		this.uplinkBandwidth = uplinkBandwidth;
 	}
-
 	public double getLatency() {
 		return latency;
 	}
-
 	public void setLatency(double latency) {
 		this.latency = latency;
 	}
-
 	public Queue<Tuple> getOutgoingTupleQueue() {
 		return outgoingTupleQueue;
 	}
-
 	public void setOutgoingTupleQueue(Queue<Tuple> outgoingTupleQueue) {
 		this.outgoingTupleQueue = outgoingTupleQueue;
 	}
-
 	public boolean isOutputLinkBusy() {
 		return isOutputLinkBusy;
 	}
-
 	public void setOutputLinkBusy(boolean isOutputLinkBusy) {
 		this.isOutputLinkBusy = isOutputLinkBusy;
 	}
-
 	public int getControllerId() {
 		return controllerId;
 	}
-
 	public void setControllerId(int controllerId) {
 		this.controllerId = controllerId;
 	}
-
 	public List<String> getActiveQueries() {
 		return activeQueries;
 	}
-
 	public void setActiveQueries(List<String> activeQueries) {
 		this.activeQueries = activeQueries;
 	}
-
 	public Map<String, Queue<Double>> getOutputTupleTimesByOperator() {
 		return outputTupleTimesByOperator;
 	}
-
 	public void setOutputTupleTimesByOperator(
 			Map<String, Queue<Double>> outputTupleTimesByOperator) {
 		this.outputTupleTimesByOperator = outputTupleTimesByOperator;
 	}
-
 	public Map<String, Double> getOutputTupleLengthsByOperator() {
 		return outputTupleLengthsByOperator;
 	}
-
 	public void setOutputTupleLengthsByOperator(
 			Map<String, Double> outputTupleLengthsByOperator) {
 		this.outputTupleLengthsByOperator = outputTupleLengthsByOperator;
 	}
-
-	
+	public Map<Integer, List<String>> getChildToOperatorsMap() {
+		return childToOperatorsMap;
+	}
+	public void setChildToOperatorsMap(Map<Integer, List<String>> childToOperatorsMap) {
+		this.childToOperatorsMap = childToOperatorsMap;
+	}	
 }

@@ -100,7 +100,7 @@ public class Controller extends SimEntity{
 			getTupleLatencyByQuery().get(details.getQueryId()).remove();
 		getTupleLatencyByQuery().get(details.getQueryId()).add(latency);
 		TupleEmitTimes.setLatency(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
-		System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
+		//System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
 	}
 
 	@Override

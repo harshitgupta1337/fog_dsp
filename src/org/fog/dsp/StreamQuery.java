@@ -35,6 +35,16 @@ public class StreamQuery {
 		return null;
 	}
 
+	public boolean isAncestorOperator(String ancestor, String descendant){
+		String op = descendant;
+		while(op != null){
+			if(op.equals(ancestor) && !op.equals(descendant))
+				return true;
+			op = getEdges().get(op);
+		}
+		return false;
+	}
+	
 	public List<List<String>> getEndToEndPaths(){
 		List<List<String>> paths = new ArrayList<List<String>>();
 		for(String leaf : getLeaves()){

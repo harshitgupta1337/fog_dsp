@@ -73,7 +73,7 @@ public class OperatorPlacementBruteForce extends OperatorPlacement{
 		}
 		setOperatorToDeviceMap(bestPlacement);
 		System.out.println("BEST PLACEMENT : "+bestPlacement);
-		System.exit(0);
+		//System.exit(0);
 	}
 	
 	protected double getCpuLoadOnDevice(int deviceId, Map<String, Integer> placement){
