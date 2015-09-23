@@ -2,7 +2,6 @@ package org.fog.entities;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +43,8 @@ public class FogDevice extends Datacenter {
 	private GeoCoverage geoCoverage;
 	private Map<Pair<String, Integer>, Double> inputRateByChildId;
 	private Map<Pair<String, Integer>, Integer> inputTuples;
+	
+	private Map<Pair<String, Integer>, Queue<Double>> inputTupleTimesByChildOperatorAndNode;
 	
 	private Queue<Double> outputTupleTimes;
 	private Map<String, Queue<Double>> outputTupleTimesByOperator;
@@ -128,6 +129,7 @@ public class FogDevice extends Datacenter {
 		this.outputTupleTimesByOperator = new HashMap<String, Queue<Double>>();
 		this.intermediateTupleTimesByOperator = new HashMap<String, Queue<Double>>();
 		this.outputTupleLengthsByOperator = new HashMap<String, Double>();
+		setInputTupleTimesByChildOperatorAndNode(new HashMap<Pair<String, Integer>, Queue<Double>>());
 		setChildrenIds(new ArrayList<Integer>());
 		setChildToOperatorsMap(new HashMap<Integer, List<String>>());
 	}
@@ -185,7 +187,82 @@ public class FogDevice extends Datacenter {
 		}
 	}
 	
-	protected boolean canBeSentTo(String operator, int childDeviceId, ResourceUsageDetails resourceUsageDetails){
+	private List<String> getSubtreeLeaves(List<String> operators, String queryId){
+		List<String> leaves =  new ArrayList<String>();
+		StreamQuery query = getStreamQueryMap().get(queryId);
+		for(String operator : operators){
+			boolean isLeaf = true;
+			for(String operator1 : operators){
+				if(query.getEdges().get(operator1)!=null && query.getEdges().get(operator1).equals(operator))
+					isLeaf = false;
+			}
+			if(isLeaf)
+				leaves.add(operator);
+		}
+		return leaves;
+	}
+	private List<String> getSubtreeChildren(String operator, List<String> operators, String queryId){
+		List<String> children = new ArrayList<String>();
+		for(String op : operators){
+			if(getStreamQueryMap().get(queryId).getEdges().get(op) != null && getStreamQueryMap().get(queryId).getEdges().get(op).equals(operator))
+				children.add(op);
+		}
+		return children;
+	}
+	protected boolean canBeSentToCpu(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId){
+		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
+		double cpuLoad = 0;
+		Map<String, Double> outputRateMap = new HashMap<String, Double>();
+		
+		List<String> leaves = getSubtreeLeaves(operators, queryId);
+		for(String leaf : leaves){
+			for(String childOperator : streamQuery.getAllChildren(leaf)){
+				if(streamQuery.isSensor(childOperator))
+					cpuLoad += getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleCpuLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
+				else
+					cpuLoad += getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getOperatorByName(childOperator).getTupleLength();
+				outputRateMap.put(leaf, streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
+			}
+		}
+		
+		boolean done = false;
+		while(!done){
+			done = true;
+			for(String operator : operators){
+				if(!outputRateMap.containsKey(operator)){
+					double outputRate = 0, cpuLoadOperator = 0; boolean bool = true;
+					for(String child : getSubtreeChildren(operator, operators, queryId)){
+						if(!outputRateMap.containsKey(child)){
+							bool = false;
+							break;
+						}
+						outputRate += outputRateMap.get(child)*streamQuery.getSelectivity(operator, child);
+						cpuLoadOperator += outputRateMap.get(child)*streamQuery.getOperatorByName(child).getTupleLength();
+					}
+					if(bool){
+						outputRateMap.put(operator, outputRate);
+						cpuLoad += cpuLoadOperator;
+					}
+					done = false;
+				}
+			}
+		}
+		
+		// NOW, cpuLoad REPRESENTS THE LOAD ON CPU INCURRED BY operators IF THEY ARE MOVED TO childId
+		
+		System.out.println(getName()+"\t"+CloudSim.getEntityName(childDeviceId)+"\t"+cpuLoad);
+		
+		return false;
+	}
+	
+	protected boolean canBeSentTo(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId){
+		canBeSentToCpu(operators, childDeviceId, resourceUsageDetails, queryId);
+		for(String operator : operators){
+			
+			/*if(getInputTupleTimesByChildOperatorAndNode().containsKey(new Pair<String, Integer>(operator, childDeviceId))){
+				getInputRateByChildOperatorAndNode(operator, childNodeId)
+			}*/
+		}
 		return false;
 	}
 	
@@ -194,6 +271,11 @@ public class FogDevice extends Datacenter {
 	 * @param ev
 	 */
 	private void processResourceUsage(SimEvent ev) {
+		
+		for(Pair<String, Integer> pair : getInputTupleTimesByChildOperatorAndNode().keySet()){
+			System.out.println(pair.getFirst()+"\t"+CloudSim.getEntityName(pair.getSecond())+"\t---->\t"+getInputRateByChildOperatorAndNode(pair.getFirst(), pair.getSecond()));
+		}
+		
 		// TODO Process resource usage to send operators to child sending it
 		ResourceUsageDetails resourceUsageDetails = (ResourceUsageDetails)ev.getData();
 		//compute sets of operators which can be sent to children
@@ -209,13 +291,33 @@ public class FogDevice extends Datacenter {
 		}
 		for(String queryId : map.keySet()){
 			List<List<String>> sets = generateSets(queryId, map);
-			System.out.println(getName()+" : "+queryId+" : "+sets);
-			for(List<String> set : sets){
-				//TODO
+			//System.out.println(getName()+" : "+queryId+" : "+sets);
+			List<Integer> childIdsForQuery = childIdsForQuery(queryId);
+			for(int childId : childIdsForQuery){
+				for(List<String> set : sets){	
+					if(canBeSentTo(set, childId, resourceUsageDetails, queryId)){
+						//TODO what if set of operators can be sent to child ?
+					}
+				}
 			}
 		}
 	}
-
+	
+	/**
+	 * Returns the child fog devices concerned for the query queryId
+	 * @param queryId
+	 * @return
+	 */
+	private List<Integer> childIdsForQuery(String queryId){
+		List<Integer> childIdsForQuery = new ArrayList<Integer>();
+		GeoCoverage geo = getStreamQueryMap().get(queryId).getGeoCoverage();
+		for(Integer childId : getChildrenIds()){
+			if(((FogDevice)CloudSim.getEntity(childId)).getGeoCoverage().covers(geo) || geo.covers(((FogDevice)CloudSim.getEntity(childId)).getGeoCoverage()))
+				childIdsForQuery.add(childId);
+		}
+		return childIdsForQuery;
+	}
+	
 	private List<List<String>> generateSets(String queryId, Map<String, List<StreamOperator>> map){
 		StreamQuery query = streamQueryMap.get(queryId);
 		List<List<String>> sets = new ArrayList<List<String>>();
@@ -498,6 +600,24 @@ public class FogDevice extends Datacenter {
 		}
 	}
 	
+	public double getInputRateByChildOperatorAndNode(String childOperator, int childNodeId){
+		Queue<Double> tupleInputTimes = inputTupleTimesByChildOperatorAndNode.get(new Pair<String, Integer>(childOperator, childNodeId));
+		double lastTime = CloudSim.clock() - INPUT_RATE_TIME;
+		for(;;){
+			if(tupleInputTimes.size() == 0)
+				return 0;
+			Double time = tupleInputTimes.peek();
+			
+			if(time < lastTime)
+				tupleInputTimes.remove();
+			else{
+				inputTupleTimesByChildOperatorAndNode.put(new Pair<String, Integer>(childOperator, childNodeId), tupleInputTimes);
+				return (tupleInputTimes.size()/INPUT_RATE_TIME);
+			}
+		}
+	}
+	
+	
 	/**
 	 * Returns the input rate for operator operatorName
 	 * @param operatorName
@@ -543,6 +663,15 @@ public class FogDevice extends Datacenter {
 		}else{
 			inputTuplesByChildOperator.put(pair, 1);
 			inputTupleTimesByChildOperator.put(pair, new LinkedList<Double>());
+		}
+	}
+	
+	private void updateInputTupleCountByChildOperatorAndNode(String childOperator, Integer childNodeId){
+		Pair<String, Integer> pair = new Pair<String, Integer>(childOperator, childNodeId);
+		if(inputTupleTimesByChildOperatorAndNode.containsKey(pair)){
+			inputTupleTimesByChildOperatorAndNode.get(pair).add(CloudSim.clock());
+		}else{
+			inputTupleTimesByChildOperatorAndNode.put(pair, new LinkedList<Double>());
 		}
 	}
 	
@@ -593,6 +722,8 @@ public class FogDevice extends Datacenter {
 				tuple.setVmId(vmId);
 				updateInputTupleCount(ev.getSource(), tuple.getDestOperatorId());
 				updateInputTupleCountByChildOperator(tuple.getDestOperatorId(), tuple.getSrcOperatorId());
+				//System.out.println("Tuple from operator "+tuple.getSrcOperatorId()+" from node "+ CloudSim.getEntityName(ev.getSource()));
+				updateInputTupleCountByChildOperatorAndNode(tuple.getSrcOperatorId(), ev.getSource());
 				updateTupleLengths(tuple.getSrcOperatorId(), tuple.getDestOperatorId(), tuple.getCloudletLength());
 				executeTuple(ev, tuple.getDestOperatorId());
 			}else if(tuple.getDestOperatorId()!=null){
@@ -823,5 +954,14 @@ public class FogDevice extends Datacenter {
 	}
 	public void setChildToOperatorsMap(Map<Integer, List<String>> childToOperatorsMap) {
 		this.childToOperatorsMap = childToOperatorsMap;
+	}
+
+	public Map<Pair<String, Integer>, Queue<Double>> getInputTupleTimesByChildOperatorAndNode() {
+		return inputTupleTimesByChildOperatorAndNode;
+	}
+
+	public void setInputTupleTimesByChildOperatorAndNode(
+			Map<Pair<String, Integer>, Queue<Double>> inputTupleTimesByChildOperatorAndNode) {
+		this.inputTupleTimesByChildOperatorAndNode = inputTupleTimesByChildOperatorAndNode;
 	}	
 }
