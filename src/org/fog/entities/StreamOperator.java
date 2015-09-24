@@ -9,6 +9,8 @@ package org.fog.entities;
 
 import org.cloudbus.cloudsim.CloudletScheduler;
 import org.cloudbus.cloudsim.Vm;
+import org.fog.scheduler.TupleScheduler;
+import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
 
 /**
@@ -73,6 +75,24 @@ public class StreamOperator extends Vm{
 		setInMigration(false);
 		setBeingInstantiated(true);
 		setSensorRate(sensorRate);
+		setCurrentAllocatedBw(0);
+		setCurrentAllocatedMips(null);
+		setCurrentAllocatedRam(0);
+		setCurrentAllocatedSize(0);
+	}
+	public StreamOperator(StreamOperator operator) {
+		super(FogUtils.generateEntityId(), operator.getUserId(), operator.getMips(), 1, operator.getRam(), operator.getBw(), operator.getSize(), operator.getVmm(), new TupleScheduler(operator.getMips(), 1));
+		setName(operator.getName());
+		setGeoCoverage(operator.getGeoCoverage());
+		setSensorName(operator.getSensorName());
+		setQueryId(operator.getQueryId());
+		setExpansionRatio(operator.getExpansionRatio());
+		setFileExpansionRatio(operator.getFileExpansionRatio());
+		setTupleFileLength(operator.getTupleFileLength());
+		setTupleLength(operator.getTupleLength());
+		setInMigration(false);
+		setBeingInstantiated(true);
+		setSensorRate(operator.getSensorRate());
 		setCurrentAllocatedBw(0);
 		setCurrentAllocatedMips(null);
 		setCurrentAllocatedRam(0);

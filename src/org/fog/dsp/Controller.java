@@ -13,6 +13,7 @@ import org.fog.dsp.bruteforce.OperatorPlacementBruteForce;
 import org.fog.entities.FogDevice;
 import org.fog.entities.StreamOperator;
 import org.fog.utils.FogEvents;
+import org.fog.utils.FogUtils;
 import org.fog.utils.TupleEmitTimes;
 import org.fog.utils.TupleFinishDetails;
 
@@ -111,6 +112,7 @@ public class Controller extends SimEntity{
 
 	public void submitStreamQuery(StreamQuery streamQuery){
 		//processQuerySubmit(streamQuery);
+		FogUtils.queryIdToGeoCoverageMap.put(streamQuery.getQueryId(), streamQuery.getGeoCoverage());
 		getQueries().put(streamQuery.getQueryId(), streamQuery);
 	}
 	

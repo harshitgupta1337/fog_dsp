@@ -31,7 +31,7 @@ import org.fog.utils.OperatorEdge;
 
 public class FogAdaptiveTest {
 
-	static int sensorTupleCpuSize = 100;
+	static int sensorTupleCpuSize = 1000;
 	static int sensorTupleNwSize = 1000;
 	public static void main(String[] args) {
 
@@ -49,7 +49,7 @@ public class FogAdaptiveTest {
 			
 			FogBroker broker = new FogBroker("broker");
 			
-			int transmitInterval = 10;
+			int transmitInterval = 100;
 
 			StreamQuery query = createStreamQuery(queryId, broker.getId(), transmitInterval);
 
@@ -94,9 +94,9 @@ public class FogAdaptiveTest {
 	}
 	
 	private static List<FogDevice> createFogDevices(String queryId, int userId, int transmitInterval) {
-		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100), 1000, 1);
+		final FogDevice gw0 = createFogDevice("gateway-0", 100, new GeoCoverage(-100, 0, 0, 100), 1000, 1);
 		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100), 1000, 1);
-		final FogDevice gw2 = createFogDevice("gateway-2", 1000, new GeoCoverage(-100, 0, -100, 0), 1000, 1);
+		final FogDevice gw2 = createFogDevice("gateway-2", 100, new GeoCoverage(-100, 0, -100, 0), 1000, 1);
 		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0), 1000, 1);
 		
 		final FogDevice l1_02 = createFogDevice("level1-02", 1000, new GeoCoverage(-100, 0, -100, 100), 10000, 1);
@@ -178,7 +178,7 @@ public class FogAdaptiveTest {
 	}
 	
 	private static StreamQuery createStreamQuery(String queryId, int userId, int transmitInterval){
-		int mips = 1000;
+		int mips = 1;
 		long size = 10000; // image size (MB)
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
@@ -188,7 +188,7 @@ public class FogAdaptiveTest {
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);add(bolt);}};
 		Map<String, String> edges = new HashMap<String, String>(){{put("spout", "bolt");}};
 		GeoCoverage geoCoverage = new GeoCoverage(0, 100, -100, 100);
-		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor-TYPE-", "spout", 0.1));add(new OperatorEdge("spout", "bolt", 0.1));}};
+		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor-TYPE-", "spout", 1));add(new OperatorEdge("spout", "bolt", 0.1));}};
 		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage, operatorEdges);
 		return query;
 	}

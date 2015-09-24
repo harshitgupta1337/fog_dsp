@@ -200,7 +200,6 @@ public class Host {
 	 * @post $none
 	 */
 	public boolean vmCreate(Vm vm) {
-		System.out.println("VM CREATE !!!!!!!!!!");
 		if (getStorage() < vm.getSize()) {
 			Log.printLine("[VmScheduler.vmCreate] Allocation of VM #" + vm.getId() + " to Host #" + getId()
 					+ " failed by storage");

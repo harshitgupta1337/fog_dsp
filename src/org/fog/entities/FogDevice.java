@@ -1,12 +1,12 @@
 package org.fog.entities;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 
 import org.apache.commons.math3.util.Pair;
 import org.cloudbus.cloudsim.Cloudlet;
@@ -22,6 +22,7 @@ import org.fog.dsp.StreamQuery;
 import org.fog.utils.FogEvents;
 import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
+import org.fog.utils.OperatorSetComparator;
 import org.fog.utils.ResourceUsageDetails;
 import org.fog.utils.TupleFinishDetails;
 
@@ -31,7 +32,6 @@ public class FogDevice extends Datacenter {
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
 	private static double INPUT_RATE_TIME = 1000;
 	private static double ADAPTIVE_INTERVAL = 1000;
-	
 	private Queue<Tuple> outgoingTupleQueue;
 	private boolean isOutputLinkBusy;
 	private double missRate;
@@ -55,7 +55,6 @@ public class FogDevice extends Datacenter {
 	private Map<Pair<String, String>, Double> tupleLengthByChildOperator;
 	private Map<Pair<String, String>, Double> tupleCountsByChildOperator;
 	private Map<String, Double> outputTupleLengthsByOperator;
-	
 	
 	private Map<Pair<String, Integer>, Queue<Double>> inputTupleTimes;
 	private Map<Pair<String, String>, Queue<Double>> inputTupleTimesByChildOperator;
@@ -259,6 +258,10 @@ public class FogDevice extends Datacenter {
 	}
 	
 	protected boolean canBeSentTo(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId){
+		for(String operator : operators){
+			if(getChildToOperatorsMap().get(childDeviceId).contains(operator))
+				return false;
+		}
 		boolean cpu = canBeSentToCpu(operators, childDeviceId, resourceUsageDetails, queryId);
 		//TODO cpu sending condition needs to be improved. N/w sending conditions need to be added.
 		return cpu;
@@ -269,13 +272,14 @@ public class FogDevice extends Datacenter {
 	 * @param ev
 	 */
 	private void processResourceUsage(SimEvent ev) {
-		
+
 		/*for(Pair<String, Integer> pair : getInputTupleTimesByChildOperatorAndNode().keySet()){
 			System.out.println(pair.getFirst()+"\t"+CloudSim.getEntityName(pair.getSecond())+"\t---->\t"+getInputRateByChildOperatorAndNode(pair.getFirst(), pair.getSecond()));
 		}*/
 		
 		// TODO Process resource usage to send operators to child sending it
 		ResourceUsageDetails resourceUsageDetails = (ResourceUsageDetails)ev.getData();
+		int childId = ev.getSource();
 		//compute sets of operators which can be sent to children
 		Map<String, List<StreamOperator>> map = new HashMap<String, List<StreamOperator>>();
 		for(Vm vm : getHost().getVmList()){
@@ -289,13 +293,16 @@ public class FogDevice extends Datacenter {
 		}
 		for(String queryId : map.keySet()){
 			List<List<String>> sets = generateSets(queryId, map);
-			//System.out.println(getName()+" : "+queryId+" : "+sets);
+			Collections.sort(sets, new OperatorSetComparator());
 			List<Integer> childIdsForQuery = childIdsForQuery(queryId);
-			for(int childId : childIdsForQuery){
+			
+			if(childIdsForQuery.contains(childId)){
 				for(List<String> set : sets){	
 					if(canBeSentTo(set, childId, resourceUsageDetails, queryId)){
 						//TODO what if set of operators can be sent to child ?
+						//System.out.println("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
 						sendOperatorsToChild(queryId, set, childId);
+						System.out.println(CloudSim.clock()+" : "+CloudSim.getEntityName(childId));
 						break;
 					}
 				}
@@ -336,16 +343,19 @@ public class FogDevice extends Datacenter {
 	}
 	
 	private void sendOperatorsToChild(String queryId, List<String> operators, int deviceId) {
-		// TODO Send operators to child fog device
-		System.out.println("YOYO"+operators);
 		FogDevice fogDevice = (FogDevice)CloudSim.getEntity(deviceId);
-		
+
 		sendNow(deviceId, FogEvents.QUERY_SUBMIT, getStreamQueryMap().get(queryId));
 		
 		for(String operator : operators){
-			StreamOperator streamOperator = getStreamQueryMap().get(queryId).getOperatorByName(operator);
+			StreamOperator streamOperator_original = getStreamQueryMap().get(queryId).getOperatorByName(operator);
+			StreamOperator streamOperator = new StreamOperator(streamOperator_original);
 			fogDevice.getVmAllocationPolicy().allocateHostForVm(streamOperator);
 			sendNow(deviceId, FogEvents.LAUNCH_OPERATOR, streamOperator);
+			if(!getChildToOperatorsMap().containsKey(deviceId)){
+				getChildToOperatorsMap().put(deviceId, new ArrayList<String>());
+			}
+			getChildToOperatorsMap().get(deviceId).add(operator);
 		}
 	}
 
@@ -357,20 +367,8 @@ public class FogDevice extends Datacenter {
 		sendNow(getParentId(), FogEvents.RESOURCE_USAGE, new ResourceUsageDetails(getHost().getTotalMips(), 
 				getUplinkBandwidth(), calculateCpuLoad(), getTrafficIntensity()));
 	}
-	
-	/**
-	 * Checks whether the set of operators can be replaced on the child fog device
-	 * @param operators the operators to be replaced
-	 * @param childId the ID of child fog device
-	 * @return
-	 */
-	protected boolean canSendOperatorsToChild(Set<String> operators, int childId){
-		
-		return false;
-	}
-	
+
 	protected void performAdativeReplacement(SimEvent ev){
-		//System.out.println(getName()+"\tADAPTIVE REPLACEMENT");
 		for(int childId : getChildrenIds()){
 			sendNow(childId, FogEvents.GET_RESOURCE_USAGE);
 		}
@@ -413,19 +411,21 @@ public class FogDevice extends Datacenter {
 	}
 	
 	protected void checkCloudletCompletion() {
+		
 		boolean cloudletCompleted = false;
 		List<? extends Host> list = getVmAllocationPolicy().getHostList();
 		for (int i = 0; i < list.size(); i++) {
 			Host host = list.get(i);
 			for (Vm vm : host.getVmList()) {
+				//System.out.println(getName()+"Remaining tuples on operator "+((StreamOperator)vm).getName()+" = "+vm.getCloudletScheduler().runningCloudlets());
 				while (vm.getCloudletScheduler().isFinishedCloudlets()) {
 					Cloudlet cl = vm.getCloudletScheduler().getNextFinishedCloudlet();
 					if (cl != null) {
 						
 						cloudletCompleted = true;
-						
+						//System.out.println("+++++"+getName()+":"+cl.getVmId());
 						//System.out.println(CloudSim.clock()+ " : Tuple ID "+((Tuple)cl).getActualTupleId()+" finished on operator "+getOperatorName(cl.getVmId()));
-						//System.out.println("Remaining tuples on operator "+getOperatorName(cl.getVmId())+" = "+vm.getCloudletScheduler().runningCloudlets());
+						//System.out.println(getName()+"Remaining tuples on operator "+getOperatorName(cl.getVmId())+" = "+vm.getCloudletScheduler().runningCloudlets());
 						Tuple tuple = (Tuple)cl;
 						StreamQuery streamQuery = getStreamQueryMap().get(tuple.getQueryId());
 						StreamOperator streamOperator = streamQuery.getOperatorByName(tuple.getDestOperatorId());
@@ -434,10 +434,8 @@ public class FogDevice extends Datacenter {
 						//System.out.println(streamOperator.getName()+" : "+(long) (streamOperator.getTupleFileLength()* streamQuery.getSelectivity(streamOperator.getName(), tuple.getSrcOperatorId())));
 						if(Math.random() <  streamQuery.getSelectivity(streamOperator.getName(), tuple.getSrcOperatorId())){
 							Tuple result = new Tuple(tuple.getQueryId(), FogUtils.generateTupleId(),
-									//(long) streamOperator.getExpansionRatio()*tuple.getCloudletLength(),
 									(long) (streamOperator.getTupleLength()),
 									tuple.getNumberOfPes(),
-									//(long) (getStreamQueryMap().get(tuple.getQueryId()).getOperatorByName(tuple.getDestOperatorId()).getFileExpansionRatio()*tuple.getCloudletFileSize()),
 									(long) (streamOperator.getTupleFileLength()),
 									tuple.getCloudletOutputSize(),
 									tuple.getUtilizationModelCpu(),
@@ -452,11 +450,11 @@ public class FogDevice extends Datacenter {
 							result.setEmitTime(tuple.getEmitTime());
 							String destoperator = null;
 							
-							
 							if(getStreamQueryMap().get(tuple.getQueryId()).getNextOperator(tuple.getDestOperatorId())!=null)
 								destoperator = getStreamQueryMap().get(tuple.getQueryId()).getNextOperator(tuple.getDestOperatorId()).getName();
 							result.setDestOperatorId(destoperator);
 							result.setSrcOperatorId(tuple.getDestOperatorId());
+							System.out.println(getName()+" sending "+tuple.getDestOperatorId()+" ---> "+destoperator);
 							sendToSelf(result);	
 						}
 						
@@ -542,6 +540,10 @@ public class FogDevice extends Datacenter {
 	}
 	
 	private void updateResourceUsage(){
+		/*System.out.println("CPU LOAD ON "+getName()+" = "+calculateCpuLoad());
+		System.out.println(getInputTupleRate("spout"));
+		System.out.println(getInputTupleRate("bolt"));
+		*/
 		updateUtils();
 		updateInputRate();
 		updateInputRateByChildOperator();
@@ -699,14 +701,25 @@ public class FogDevice extends Datacenter {
 	}
 	
 	private void addChild(int childId){
+		if(CloudSim.getEntityName(childId).contains("sensor"))
+			return;
 		if(!getChildrenIds().contains(childId) && childId != getId())
 			getChildrenIds().add(childId);
+		if(!getChildToOperatorsMap().containsKey(childId))
+			getChildToOperatorsMap().put(childId, new ArrayList<String>());
 	}
 	
 	private void processTupleArrival(SimEvent ev){
 		Tuple tuple = (Tuple)ev.getData();
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 		addChild(ev.getSource());
+		
+		if(FogUtils.queryIdToGeoCoverageMap.containsKey(tuple.getQueryId())){
+			GeoCoverage geo = FogUtils.queryIdToGeoCoverageMap.get(tuple.getQueryId());
+			if(!(getGeoCoverage().covers(geo) || geo.covers(geoCoverage)))
+				return;
+		}
+		
 		if(getHost().getVmList().size() > 0){
 			final StreamOperator operator = (StreamOperator)getHost().getVmList().get(0);
 			if(CloudSim.clock() > 100){
@@ -726,11 +739,23 @@ public class FogDevice extends Datacenter {
 		
 		if(queryToOperatorsMap.containsKey(tuple.getQueryId())){
 			if(queryToOperatorsMap.get(tuple.getQueryId()).contains(tuple.getDestOperatorId())){
-				int vmId = streamQueryMap.get(tuple.getQueryId()).getOperatorByName(tuple.getDestOperatorId()).getId();
+				int vmId = -1;
+				for(Vm vm : getHost().getVmList()){
+					if(((StreamOperator)vm).getName().equals(tuple.getDestOperatorId()))
+						vmId = vm.getId();
+				}
+				//int vmId = streamQueryMap.get(tuple.getQueryId()).getOperatorByName(tuple.getDestOperatorId()).getId();
+				
+				if(vmId < 0){
+					return;
+				}
+				
+				
 				//System.out.println(CloudSim.clock()+" : Tuple ID " + tuple.getActualTupleId()+" received by "+getName()+" for operator "+tuple.getDestOperatorId());
+				//System.out.println(tuple.getActualTupleId()+" received by "+getName()+" for operator "+tuple.getDestOperatorId());
+				//System.out.print(getName());displayAllocatedMipsForOperators();System.out.println();
+				
 				tuple.setVmId(vmId);
-				System.out.println(getName()+"\t"+tuple.getDestOperatorId()+"\t"+CloudSim.getEntityName(ev.getSource()));
-				System.out.println(getName()+"\t"+calculateCpuLoad());
 				updateInputTupleCount(ev.getSource(), tuple.getDestOperatorId());
 				updateInputTupleCountByChildOperator(tuple.getDestOperatorId(), tuple.getSrcOperatorId());
 				//System.out.println("Tuple from operator "+tuple.getSrcOperatorId()+" from node "+ CloudSim.getEntityName(ev.getSource()));
@@ -776,9 +801,8 @@ public class FogDevice extends Datacenter {
 	
 	private void executeTuple(SimEvent ev, String operatorId){
 		updateAllocatedMips(operatorId);
-		//displayAllocatedMipsForOperators();
 		processCloudletSubmit(ev, false);
-		//updateAllocatedMips();
+		updateAllocatedMips(operatorId);
 	}
 	
 	private void processOperatorArrival(SimEvent ev){

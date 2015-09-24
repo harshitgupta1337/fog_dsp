@@ -17,7 +17,7 @@ import org.cloudbus.cloudsim.core.CloudSim;
 import org.cloudbus.cloudsim.core.CloudSimTags;
 import org.cloudbus.cloudsim.core.SimEntity;
 import org.cloudbus.cloudsim.core.SimEvent;
-import org.fog.entities.Tuple;
+import org.fog.entities.StreamOperator;
 
 /**
  * Datacenter class is a CloudResource whose hostList are virtualized. It deals with processing of
@@ -246,7 +246,6 @@ public class Datacenter extends SimEntity {
 				break;
 
 			case CloudSimTags.VM_DATACENTER_EVENT:
-				//System.out.println(getName()+" received VM_DATACENTER_EVENT at time "+CloudSim.clock());
 				updateCloudletProcessing();
 				checkCloudletCompletion();
 				break;
@@ -678,7 +677,6 @@ public class Datacenter extends SimEntity {
 	 */
 	protected void processCloudletSubmit(SimEvent ev, boolean ack) {
 		updateCloudletProcessing();
-
 		try {
 			// gets the Cloudlet object
 			Cloudlet cl = (Cloudlet) ev.getData();
@@ -722,7 +720,7 @@ public class Datacenter extends SimEntity {
 			Host host = getVmAllocationPolicy().getHost(vmId, userId);
 			Vm vm = host.getVm(vmId, userId);
 			CloudletScheduler scheduler = vm.getCloudletScheduler();
-			//System.out.println(scheduler);
+			
 			double estimatedFinishTime = scheduler.cloudletSubmit(cl, fileTransferTime);
 			//System.out.println(CloudSim.clock()+" : Received tuple ID "+((Tuple)cl).getActualTupleId()+" estimated finish time "+estimatedFinishTime);
 
@@ -730,6 +728,8 @@ public class Datacenter extends SimEntity {
 			if (estimatedFinishTime > 0.0 && !Double.isInfinite(estimatedFinishTime)) {
 				estimatedFinishTime += fileTransferTime;
 				/*	edited by HARSHIT	*/
+				//if(getName().equals("gateway-3"))
+				//System.out.println(getName()+" : ESTIMATED FINISH TIME ON "+((StreamOperator)vm).getName()+": "+estimatedFinishTime);
 				send(getId(), CloudSim.getMinTimeBetweenEvents()
 						+estimatedFinishTime, CloudSimTags.VM_DATACENTER_EVENT);
 				/*	edit done	*/
