@@ -28,10 +28,11 @@ import org.fog.utils.TupleFinishDetails;
 
 public class FogDevice extends Datacenter {
 	
+	private static boolean ADAPTIVE_REPLACEMENT = true;
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 10;
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
 	private static double INPUT_RATE_TIME = 1000;
-	private static double ADAPTIVE_INTERVAL = 1000;
+	private static double ADAPTIVE_INTERVAL = 10000;
 	private Queue<Tuple> outgoingTupleQueue;
 	private boolean isOutputLinkBusy;
 	private double missRate;
@@ -300,9 +301,9 @@ public class FogDevice extends Datacenter {
 				for(List<String> set : sets){	
 					if(canBeSentTo(set, childId, resourceUsageDetails, queryId)){
 						//TODO what if set of operators can be sent to child ?
-						//System.out.println("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
+						System.out.println("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
 						sendOperatorsToChild(queryId, set, childId);
-						System.out.println(CloudSim.clock()+" : "+CloudSim.getEntityName(childId));
+						//System.out.println(CloudSim.clock()+" : "+CloudSim.getEntityName(childId));
 						break;
 					}
 				}
@@ -369,6 +370,8 @@ public class FogDevice extends Datacenter {
 	}
 
 	protected void performAdativeReplacement(SimEvent ev){
+		if(!ADAPTIVE_REPLACEMENT)
+			return;
 		for(int childId : getChildrenIds()){
 			sendNow(childId, FogEvents.GET_RESOURCE_USAGE);
 		}
@@ -454,7 +457,7 @@ public class FogDevice extends Datacenter {
 								destoperator = getStreamQueryMap().get(tuple.getQueryId()).getNextOperator(tuple.getDestOperatorId()).getName();
 							result.setDestOperatorId(destoperator);
 							result.setSrcOperatorId(tuple.getDestOperatorId());
-							System.out.println(getName()+" sending "+tuple.getDestOperatorId()+" ---> "+destoperator);
+							//System.out.println(getName()+" sending "+tuple.getDestOperatorId()+" ---> "+destoperator);
 							sendToSelf(result);	
 						}
 						

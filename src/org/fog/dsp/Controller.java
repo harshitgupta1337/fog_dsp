@@ -101,7 +101,7 @@ public class Controller extends SimEntity{
 			getTupleLatencyByQuery().get(details.getQueryId()).remove();
 		getTupleLatencyByQuery().get(details.getQueryId()).add(latency);
 		TupleEmitTimes.setLatency(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
-		//System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
+		System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
 	}
 
 	@Override
@@ -122,18 +122,18 @@ public class Controller extends SimEntity{
 	}
 	
 	private void processQuerySubmit(StreamQuery query){
-		System.out.println("Submitted query");
+		//System.out.println("Submitted query");
 		getQueries().put(query.getQueryId(), query);
 		getTupleLatencyByQuery().put(query.getQueryId(), new LinkedList<Double>());
-		Map<String, Integer> allocationMap = (new OperatorPlacementOnlyCloud(fogDevices, query)).getOperatorToDeviceMap();
+		Map<String, Integer> allocationMap = (new OperatorPlacementBruteForce(fogDevices, query)).getOperatorToDeviceMap();
 		for(FogDevice fogDevice : fogDevices){
 			sendNow(fogDevice.getId(), FogEvents.ACTIVE_QUERY_UPDATE, query);
 		}
 		
 		for(String operatorName : allocationMap.keySet()){
 			StreamOperator operator = query.getOperatorByName(operatorName);
-			System.out.println("Operator "+operator.getName()+" has been placed on "+allocationMap.get(operatorName));
-			System.out.println(CloudSim.getEntityName(allocationMap.get(operatorName)));
+			//System.out.println("Operator "+operator.getName()+" has been placed on "+allocationMap.get(operatorName));
+			//System.out.println(CloudSim.getEntityName(allocationMap.get(operatorName)));
 
 			sendNow(allocationMap.get(operatorName), FogEvents.QUERY_SUBMIT, query);
 			

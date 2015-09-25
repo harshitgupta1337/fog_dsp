@@ -26,7 +26,7 @@ public class StreamOperatorAllocationPolicy extends VmAllocationPolicy{
 	public boolean allocateHostForVm(Vm vm) {
 		Host host = fogHost;
 		boolean result = host.vmCreate(vm);
-		System.out.println("Trying to create "+((StreamOperator)vm).getName()+" in device "+host.getDatacenter().getName()+" ---> "+result);
+		//System.out.println("Trying to create "+((StreamOperator)vm).getName()+" in device "+host.getDatacenter().getName()+" ---> "+result);
 		if (result) { // if vm were succesfully created in the host
 			getStreamOperatorIds().add(vm.getId());
 		}

@@ -94,15 +94,15 @@ public class FogAdaptiveTest {
 	}
 	
 	private static List<FogDevice> createFogDevices(String queryId, int userId, int transmitInterval) {
-		final FogDevice gw0 = createFogDevice("gateway-0", 100, new GeoCoverage(-100, 0, 0, 100), 1000, 1);
-		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100), 1000, 1);
-		final FogDevice gw2 = createFogDevice("gateway-2", 100, new GeoCoverage(-100, 0, -100, 0), 1000, 1);
-		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0), 1000, 1);
+		final FogDevice gw0 = createFogDevice("gateway-0", 100, new GeoCoverage(-100, 0, 0, 100), 100, 1);
+		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100), 100, 1);
+		final FogDevice gw2 = createFogDevice("gateway-2", 100, new GeoCoverage(-100, 0, -100, 0), 100, 1);
+		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0), 100, 1);
 		
 		final FogDevice l1_02 = createFogDevice("level1-02", 1000, new GeoCoverage(-100, 0, -100, 100), 10000, 1);
 		final FogDevice l1_13 = createFogDevice("level1-13", 1000, new GeoCoverage(0, 100, -100, 100), 1000, 1);
 		
-		final FogDevice cloud = createFogDevice("cloud", 10000, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
+		final FogDevice cloud = createFogDevice("cloud", FogUtils.MAX, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
 		
 		gw0.setParentId(l1_02.getId());
 		gw2.setParentId(l1_02.getId());
