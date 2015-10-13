@@ -216,6 +216,7 @@ public class FogDevice extends Datacenter {
 		
 		List<String> leaves = getSubtreeLeaves(operators, queryId);
 		for(String leaf : leaves){
+			// calculate the output rate of each leaf operator in the subtree
 			for(String childOperator : streamQuery.getAllChildren(leaf)){
 				if(streamQuery.isSensor(childOperator))
 					cpuLoad += getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleCpuLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
@@ -225,6 +226,7 @@ public class FogDevice extends Datacenter {
 			}
 		}
 		
+		//now calculate the output rates of all the non-leaf operators in the subtree
 		boolean done = false;
 		while(!done){
 			done = true;
@@ -278,10 +280,10 @@ public class FogDevice extends Datacenter {
 			System.out.println(pair.getFirst()+"\t"+CloudSim.getEntityName(pair.getSecond())+"\t---->\t"+getInputRateByChildOperatorAndNode(pair.getFirst(), pair.getSecond()));
 		}*/
 		
-		// TODO Process resource usage to send operators to child sending it
 		ResourceUsageDetails resourceUsageDetails = (ResourceUsageDetails)ev.getData();
 		int childId = ev.getSource();
-		//compute sets of operators which can be sent to children
+
+		//finding out which query has what all operators running on the device
 		Map<String, List<StreamOperator>> map = new HashMap<String, List<StreamOperator>>();
 		for(Vm vm : getHost().getVmList()){
 			StreamOperator streamOperator = (StreamOperator)vm;
@@ -292,6 +294,7 @@ public class FogDevice extends Datacenter {
 				map.get(streamOperator.getQueryId()).add(streamOperator);
 			}
 		}
+		
 		for(String queryId : map.keySet()){
 			List<List<String>> sets = generateSets(queryId, map);
 			Collections.sort(sets, new OperatorSetComparator());
@@ -300,7 +303,6 @@ public class FogDevice extends Datacenter {
 			if(childIdsForQuery.contains(childId)){
 				for(List<String> set : sets){	
 					if(canBeSentTo(set, childId, resourceUsageDetails, queryId)){
-						//TODO what if set of operators can be sent to child ?
 						System.out.println("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
 						sendOperatorsToChild(queryId, set, childId);
 						//System.out.println(CloudSim.clock()+" : "+CloudSim.getEntityName(childId));
@@ -326,6 +328,12 @@ public class FogDevice extends Datacenter {
 		return childIdsForQuery;
 	}
 	
+	/**
+	 * Finds out the sets of operators that can be sent to a child device together for a given query
+	 * @param queryId the ID of the query whose operator sets have to be returned
+	 * @param map map of query ID to operators of that query running on this device 
+	 * @return
+	 */
 	private List<List<String>> generateSets(String queryId, Map<String, List<StreamOperator>> map){
 		StreamQuery query = streamQueryMap.get(queryId);
 		List<List<String>> sets = new ArrayList<List<String>>();
