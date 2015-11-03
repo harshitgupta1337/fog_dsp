@@ -124,6 +124,8 @@ public class OperatorPlacementBruteForce extends OperatorPlacement{
 				temp -=  inputRateForOperatorOnPath * tupleLength;
 			}
 			//totalCpuCost += temp/(2*inputRateForOperatorOnPath*((FogDevice)CloudSim.getEntity(device)).getHost().getTotalMips());
+			
+			// FOR CALCULATION OF CPU COST, WE TAKE INTO ACCOUNT THE CPU LOAD ON A DEVICE BEFORE THE OPERATOR WAS LAUNCHED
 			totalCpuCost += alpha*tupleLength/((FogDevice)CloudSim.getEntity(device)).getHost().getTotalMips() + beta*temp;
 		}
 		return totalCpuCost;
