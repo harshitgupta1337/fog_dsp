@@ -209,6 +209,31 @@ public class FogDevice extends Datacenter {
 		}
 		return children;
 	}
+	
+	/**
+	 * Returns the paths of operators present in the subset of operators. The paths are always in the order of leaf-to-root
+	 * @param operators
+	 * @param queryId
+	 * @return
+	 */
+	public List<List<String>> getPathsInOperatorSubset(List<String> operators, String queryId){
+		//TODO 
+		StreamQuery query = getStreamQueryMap().get(queryId);
+		System.out.println("Subset of operators : "+operators);
+		List<List<String>> paths = new ArrayList<List<String>>();
+		for(String leaf : getSubtreeLeaves(operators, queryId)){
+			List<String> path = new ArrayList<String>();
+			String op = leaf;
+			while(op != null && operators.contains(op)){
+				path.add(op);
+				op = query.getEdges().get(op);
+			}
+			paths.add(path);
+		}
+		System.out.println("Paths : "+paths);
+		return paths;
+	}
+	
 	protected boolean canBeSentToCpu(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId){
 		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
 		double cpuLoad = 0;
@@ -217,6 +242,9 @@ public class FogDevice extends Datacenter {
 		List<String> leaves = getSubtreeLeaves(operators, queryId);
 		for(String leaf : leaves){
 			// calculate the output rate of each leaf operator in the subtree
+			
+			System.out.println("Children of "+leaf+" : "+streamQuery.getAllChildren(leaf));
+			
 			for(String childOperator : streamQuery.getAllChildren(leaf)){
 				if(streamQuery.isSensor(childOperator))
 					cpuLoad += getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleCpuLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
@@ -254,10 +282,19 @@ public class FogDevice extends Datacenter {
 		
 		//System.out.println(getName()+"\t"+CloudSim.getEntityName(childDeviceId)+"\t"+cpuLoad);
 		
-		if((cpuLoad+resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips())/resourceUsageDetails.getMips() <= 1)
-			return true;
+		if((cpuLoad+resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips())/resourceUsageDetails.getMips() > 1)
+			return false;
 		
-		return false;
+		// NOW CALCULATING THE COST OF RUNNING THE SUBSET OF OPERATORS ON CURRENT DEVICE
+		
+		
+		
+		// NOW CALCULATING THE COST OF RUNNING THE SUBSET OF OPERATORS ON CHOSEN CHILD DEVICE
+		
+		
+		getPathsInOperatorSubset(operators, queryId);
+		
+		return true;
 	}
 	
 	protected boolean canBeSentTo(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId){
