@@ -28,7 +28,7 @@ import org.fog.utils.TupleFinishDetails;
 
 public class FogDevice extends Datacenter {
 	
-	private static boolean ADAPTIVE_REPLACEMENT = true;
+	private static boolean ADAPTIVE_REPLACEMENT = false;
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 10;
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
 	private static double INPUT_RATE_TIME = 1000;
@@ -60,6 +60,11 @@ public class FogDevice extends Datacenter {
 	private Map<Pair<String, Integer>, Queue<Double>> inputTupleTimes;
 	private Map<Pair<String, String>, Queue<Double>> inputTupleTimesByChildOperator;
 	private Map<String, Queue<Double>> utilization; 
+	
+	private Map<Integer, Integer> cloudTrafficMap;
+	
+	private double lockTime;
+	
 	/**	
 	 * ID of the parent Fog Device
 	 */
@@ -132,6 +137,10 @@ public class FogDevice extends Datacenter {
 		setInputTupleTimesByChildOperatorAndNode(new HashMap<Pair<String, Integer>, Queue<Double>>());
 		setChildrenIds(new ArrayList<Integer>());
 		setChildToOperatorsMap(new HashMap<Integer, List<String>>());
+		
+		this.cloudTrafficMap = new HashMap<Integer, Integer>();
+		
+		this.lockTime = 0;
 	}
 
 	/**
@@ -230,7 +239,7 @@ public class FogDevice extends Datacenter {
 			}
 			paths.add(path);
 		}
-		System.out.println("Paths : "+paths);
+		//System.out.println("Paths : "+paths);
 		return paths;
 	}
 	
@@ -244,18 +253,21 @@ public class FogDevice extends Datacenter {
 			// calculate the output rate of each leaf operator in the subtree
 			
 			System.out.println("Children of "+leaf+" : "+streamQuery.getAllChildren(leaf));
-			
+			double outputRate = 0;
 			for(String childOperator : streamQuery.getAllChildren(leaf)){
 				if(streamQuery.isSensor(childOperator))
 					cpuLoad += getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleCpuLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
 				else
 					cpuLoad += getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getOperatorByName(childOperator).getTupleLength();
-				outputRateMap.put(leaf, streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
+				//CORRECTED outputRateMap.put(leaf, streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
+				outputRate += streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId);
 			}
+			//CORRECTED 
+			outputRateMap.put(leaf, outputRate);
 		}
 		
 		//now calculate the output rates of all the non-leaf operators in the subtree
-		boolean done = false;
+		boolean done = false;	// denotes whether output rate of all operators has been calculated
 		while(!done){
 			done = true;
 			for(String operator : operators){
@@ -282,19 +294,85 @@ public class FogDevice extends Datacenter {
 		
 		//System.out.println(getName()+"\t"+CloudSim.getEntityName(childDeviceId)+"\t"+cpuLoad);
 		
-		if((cpuLoad+resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips())/resourceUsageDetails.getMips() > 1)
+		double finalTrafficIntensityOnChild = (cpuLoad+resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips())/resourceUsageDetails.getMips(); 
+		
+		if(finalTrafficIntensityOnChild > 1)
 			return false;
-		
-		// NOW CALCULATING THE COST OF RUNNING THE SUBSET OF OPERATORS ON CURRENT DEVICE
-		
-		
 		
 		// NOW CALCULATING THE COST OF RUNNING THE SUBSET OF OPERATORS ON CHOSEN CHILD DEVICE
 		
+		List<List<String>> paths = getPathsInOperatorSubset(operators, queryId);
 		
-		getPathsInOperatorSubset(operators, queryId);
+		double maxCostChildDevice = -1;
+		for(List<String> path : paths){
+			double pathCost = calculatePathCPUCostOnChildDevice(path, queryId, childDeviceId, 
+					finalTrafficIntensityOnChild*resourceUsageDetails.getMips(), resourceUsageDetails.getMips());
+			if(pathCost > maxCostChildDevice)
+				maxCostChildDevice = pathCost;
+		}
 		
+		// NOW CALCULATING THE COST OF RUNNING THE SUBSET OF OPERATORS ON CURRENT DEVICE
+		double maxCostCurrentDevice = -1;
+		for(List<String> path : paths){
+			double pathCost = calculatePathCPUCostOnCurrentDevice(path, queryId, childDeviceId, 
+					calculateCpuLoad()*getHost().getTotalMips(), getHost().getTotalMips());
+			if(pathCost > maxCostCurrentDevice)
+				maxCostCurrentDevice = pathCost;
+		}
+		//return (maxCostChildDevice < maxCostCurrentDevice);
 		return true;
+	}
+	
+	protected double calculatePathCPUCostOnCurrentDevice(List<String> path, String queryId, int childDeviceId, double finalTrafficLoad, double mips){
+		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
+		
+		double cost = 0;
+		double inputRate = 0;
+		for(int i=0;i<path.size();i++){
+			String operator = path.get(i);
+			if(i==0){
+				double maxCost = -1;
+				for(String childOperator : streamQuery.getAllChildren(operator)){// TAKING THE MAXIMUM COST AMONG ALL OPERATORS SENDING TUPLES TO THE PATH LEAF
+					double cost1 = finalTrafficLoad/(getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*mips);
+					if(cost1 > maxCost)
+						maxCost= cost1;
+					inputRate += streamQuery.getSelectivity(operator, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId);
+				}
+				cost += maxCost;
+			}else{
+				String prevOperator = path.get(i-1);
+				cost += finalTrafficLoad/(inputRate*mips);
+				inputRate = inputRate*streamQuery.getSelectivity(operator, prevOperator);
+			}
+		}
+		System.out.println("Cost of running "+path+" on "+getName()+" = "+cost);
+		return cost;
+	}
+	
+	protected double calculatePathCPUCostOnChildDevice(List<String> path, String queryId, int childDeviceId, double finalTrafficLoad, double mips){
+		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
+		
+		double cost = 0;
+		double inputRate = 0;
+		for(int i=0;i<path.size();i++){
+			String operator = path.get(i);
+			if(i==0){
+				double maxCost = -1;
+				for(String childOperator : streamQuery.getAllChildren(operator)){
+					double cost1 = finalTrafficLoad/(getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*mips);
+					if(cost1 > maxCost)
+						maxCost= cost1;
+					inputRate += streamQuery.getSelectivity(operator, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId);
+				}
+				cost += maxCost;
+			}else{
+				String prevOperator = path.get(i-1);
+				cost += finalTrafficLoad/(inputRate*mips);
+				inputRate = inputRate*streamQuery.getSelectivity(operator, prevOperator);
+			}
+		}
+		System.out.println("Cost of running "+path+" on "+CloudSim.getEntityName(childDeviceId)+" = "+cost);
+		return cost;
 	}
 	
 	protected boolean canBeSentTo(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId){
@@ -331,6 +409,9 @@ public class FogDevice extends Datacenter {
 				map.get(streamOperator.getQueryId()).add(streamOperator);
 			}
 		}
+		
+		double currentCpuLoad = calculateCpuLoad()*getHost().getTotalMips();
+		double currentNwLoad = getTrafficIntensity()*getUplinkBandwidth();
 		
 		for(String queryId : map.keySet()){
 			List<List<String>> sets = generateSets(queryId, map);
@@ -596,6 +677,13 @@ public class FogDevice extends Datacenter {
 		updateInputRate();
 		updateInputRateByChildOperator();
 		send(getId(), RESOURCE_USAGE_COLLECTION_INTERVAL, FogEvents.UPDATE_RESOURCE_USAGE);
+		
+		if(getName().equals("cloud")){
+			System.out.println("===================================================");
+			for(Integer time : cloudTrafficMap.keySet())
+				System.out.println("TRAFFIC\t" + time + "\t" + cloudTrafficMap.get(time));
+			System.out.println("===================================================");	
+		}
 	}
 	
 	private double getIntermediateTupleRate(String operatorName){
@@ -699,7 +787,7 @@ public class FogDevice extends Datacenter {
 	 */
 	private void displayInputTupleRateByChildOperator(){
 		for(Pair<String, String> key : inputTupleTimesByChildOperator.keySet()){
-			System.out.println(getName()+" : INPUT RATE BY CHILD OP ID : "+key.getFirst()+"\t"+key.getSecond()+"\t--->\t"+getInputTupleRateByChildOperator(key.getSecond(), key.getFirst()));
+			System.out.println(getName()+" : INPUT RATE BY CHILD OP ID : "+key.getFirst()+"\t"+key.getSecond()+"\t\t"+getInputTupleRateByChildOperator(key.getSecond(), key.getFirst()));
 		}
 	}
 	
@@ -757,7 +845,18 @@ public class FogDevice extends Datacenter {
 			getChildToOperatorsMap().put(childId, new ArrayList<String>());
 	}
 	
+	private void updateCloudTraffic(){
+		int time = (int)CloudSim.clock()/1000;
+		if(!cloudTrafficMap.containsKey(time))
+			cloudTrafficMap.put(time, 0);
+		cloudTrafficMap.put(time, cloudTrafficMap.get(time)+1);
+	}
+	
 	private void processTupleArrival(SimEvent ev){
+		if(getName().equals("cloud")){
+			updateCloudTraffic();
+		}
+		
 		Tuple tuple = (Tuple)ev.getData();
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 		addChild(ev.getSource());
