@@ -28,7 +28,7 @@ import org.fog.utils.TupleFinishDetails;
 
 public class FogDevice extends Datacenter {
 	
-	private static boolean ADAPTIVE_REPLACEMENT = false;
+	private static boolean ADAPTIVE_REPLACEMENT = true;
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 10;
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
 	private static double INPUT_RATE_TIME = 1000;
@@ -196,7 +196,7 @@ public class FogDevice extends Datacenter {
 		}
 	}
 	
-	private List<String> getSubtreeLeaves(List<String> operators, String queryId){
+	protected List<String> getSubtreeLeaves(List<String> operators, String queryId){
 		List<String> leaves =  new ArrayList<String>();
 		StreamQuery query = getStreamQueryMap().get(queryId);
 		for(String operator : operators){
@@ -210,7 +210,7 @@ public class FogDevice extends Datacenter {
 		}
 		return leaves;
 	}
-	private List<String> getSubtreeChildren(String operator, List<String> operators, String queryId){
+	protected List<String> getSubtreeChildren(String operator, List<String> operators, String queryId){
 		List<String> children = new ArrayList<String>();
 		for(String op : operators){
 			if(getStreamQueryMap().get(queryId).getEdges().get(op) != null && getStreamQueryMap().get(queryId).getEdges().get(op).equals(operator))
@@ -228,7 +228,7 @@ public class FogDevice extends Datacenter {
 	public List<List<String>> getPathsInOperatorSubset(List<String> operators, String queryId){
 		//TODO 
 		StreamQuery query = getStreamQueryMap().get(queryId);
-		System.out.println("Subset of operators : "+operators);
+		//System.out.println("Subset of operators : "+operators);
 		List<List<String>> paths = new ArrayList<List<String>>();
 		for(String leaf : getSubtreeLeaves(operators, queryId)){
 			List<String> path = new ArrayList<String>();
@@ -345,7 +345,7 @@ public class FogDevice extends Datacenter {
 				inputRate = inputRate*streamQuery.getSelectivity(operator, prevOperator);
 			}
 		}
-		System.out.println("Cost of running "+path+" on "+getName()+" = "+cost);
+		//System.out.println("Cost of running "+path+" on "+getName()+" = "+cost);
 		return cost;
 	}
 	
@@ -371,7 +371,6 @@ public class FogDevice extends Datacenter {
 				inputRate = inputRate*streamQuery.getSelectivity(operator, prevOperator);
 			}
 		}
-		System.out.println("Cost of running "+path+" on "+CloudSim.getEntityName(childDeviceId)+" = "+cost);
 		return cost;
 	}
 	
@@ -389,7 +388,7 @@ public class FogDevice extends Datacenter {
 	 * Process resource usage of child and decide whether to send operators to that child or not
 	 * @param ev
 	 */
-	private void processResourceUsage(SimEvent ev) {
+	protected void processResourceUsage(SimEvent ev) {
 
 		/*for(Pair<String, Integer> pair : getInputTupleTimesByChildOperatorAndNode().keySet()){
 			System.out.println(pair.getFirst()+"\t"+CloudSim.getEntityName(pair.getSecond())+"\t---->\t"+getInputRateByChildOperatorAndNode(pair.getFirst(), pair.getSecond()));
@@ -409,9 +408,6 @@ public class FogDevice extends Datacenter {
 				map.get(streamOperator.getQueryId()).add(streamOperator);
 			}
 		}
-		
-		double currentCpuLoad = calculateCpuLoad()*getHost().getTotalMips();
-		double currentNwLoad = getTrafficIntensity()*getUplinkBandwidth();
 		
 		for(String queryId : map.keySet()){
 			List<List<String>> sets = generateSets(queryId, map);
@@ -436,7 +432,7 @@ public class FogDevice extends Datacenter {
 	 * @param queryId
 	 * @return
 	 */
-	private List<Integer> childIdsForQuery(String queryId){
+	protected List<Integer> childIdsForQuery(String queryId){
 		List<Integer> childIdsForQuery = new ArrayList<Integer>();
 		GeoCoverage geo = getStreamQueryMap().get(queryId).getGeoCoverage();
 		for(Integer childId : getChildrenIds()){
@@ -452,7 +448,7 @@ public class FogDevice extends Datacenter {
 	 * @param map map of query ID to operators of that query running on this device 
 	 * @return
 	 */
-	private List<List<String>> generateSets(String queryId, Map<String, List<StreamOperator>> map){
+	protected List<List<String>> generateSets(String queryId, Map<String, List<StreamOperator>> map){
 		StreamQuery query = streamQueryMap.get(queryId);
 		List<List<String>> sets = new ArrayList<List<String>>();
 			
@@ -469,7 +465,7 @@ public class FogDevice extends Datacenter {
 		return sets;
 	}
 	
-	private void sendOperatorsToChild(String queryId, List<String> operators, int deviceId) {
+	protected void sendOperatorsToChild(String queryId, List<String> operators, int deviceId) {
 		FogDevice fogDevice = (FogDevice)CloudSim.getEntity(deviceId);
 
 		sendNow(deviceId, FogEvents.QUERY_SUBMIT, getStreamQueryMap().get(queryId));
@@ -678,12 +674,12 @@ public class FogDevice extends Datacenter {
 		updateInputRateByChildOperator();
 		send(getId(), RESOURCE_USAGE_COLLECTION_INTERVAL, FogEvents.UPDATE_RESOURCE_USAGE);
 		
-		if(getName().equals("cloud")){
+		/*if(getName().equals("cloud")){
 			System.out.println("===================================================");
 			for(Integer time : cloudTrafficMap.keySet())
 				System.out.println("TRAFFIC\t" + time + "\t" + cloudTrafficMap.get(time));
 			System.out.println("===================================================");	
-		}
+		}*/
 	}
 	
 	private double getIntermediateTupleRate(String operatorName){

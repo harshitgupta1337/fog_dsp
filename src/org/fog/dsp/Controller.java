@@ -101,7 +101,7 @@ public class Controller extends SimEntity{
 			getTupleLatencyByQuery().get(details.getQueryId()).remove();
 		getTupleLatencyByQuery().get(details.getQueryId()).add(latency);
 		TupleEmitTimes.setLatency(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
-		System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
+		//System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
 	}
 
 	@Override
@@ -125,7 +125,7 @@ public class Controller extends SimEntity{
 		//System.out.println("Submitted query");
 		getQueries().put(query.getQueryId(), query);
 		getTupleLatencyByQuery().put(query.getQueryId(), new LinkedList<Double>());
-		Map<String, Integer> allocationMap = (new OperatorPlacementOnlyCloud(fogDevices, query)).getOperatorToDeviceMap();
+		Map<String, Integer> allocationMap = (new OperatorPlacementBruteForce(fogDevices, query)).getOperatorToDeviceMap();
 		for(FogDevice fogDevice : fogDevices){
 			sendNow(fogDevice.getId(), FogEvents.ACTIVE_QUERY_UPDATE, query);
 		}

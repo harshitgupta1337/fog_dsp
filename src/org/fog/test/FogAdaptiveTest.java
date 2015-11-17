@@ -20,6 +20,7 @@ import org.fog.dsp.StreamQuery;
 import org.fog.entities.FogBroker;
 import org.fog.entities.FogDevice;
 import org.fog.entities.FogDeviceCharacteristics;
+import org.fog.entities.FogDeviceCollector;
 import org.fog.entities.Sensor;
 import org.fog.entities.StreamOperator;
 import org.fog.policy.StreamOperatorAllocationPolicy;
@@ -169,7 +170,7 @@ public class FogAdaptiveTest {
 
 		FogDevice fogdevice = null;
 		try {
-			fogdevice = new FogDevice(name, geoCoverage, characteristics, new StreamOperatorAllocationPolicy(hostList), storageList, 0, uplinkBandwidth, latency);
+			fogdevice = new FogDeviceCollector(name, geoCoverage, characteristics, new StreamOperatorAllocationPolicy(hostList), storageList, 0, uplinkBandwidth, latency);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
