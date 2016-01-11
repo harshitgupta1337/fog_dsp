@@ -71,26 +71,23 @@ public class FogDeviceCollector extends FogDevice{
 					
 					if(childIdsForQuery.contains(childId)){
 						for(List<String> set : sets){
+							System.out.println("-----------------------------------------------------------------");
 							CanBeSentResult canBeSentResult = canBeSentToCollector(set, childId, resourceUsageDetails, queryId, currentCpuLoad, currentNwLoad);
 							if(canBeSentResult.isCanBeSent()){
 								System.out.println("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
-								
 								double newCpuLoad = resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips()+canBeSentResult.getCpuLoad();
 								resourceUsageDetails.setCpuTrafficIntensity(newCpuLoad/resourceUsageDetails.getMips());
 								double newNwLoad = resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth()+canBeSentResult.getNwLoad();
 								resourceUsageDetails.setNwTrafficIntensity(newNwLoad/resourceUsageDetails.getUplinkBandwidth());
-								
 								currentCpuLoad -= canBeSentResult.getCpuLoad();
-								currentNwLoad -= canBeSentResult.getNwLoad();
-								
+								//currentNwLoad -= canBeSentResult.getNwLoad(); WE DONT DO THIS BECAUSE THE NW LOAD ON CURRENT DEVICE REMAINS THE SAME EVEN AFTER MIGRATION								
 								sendOperatorsToChild(queryId, set, childId);
-								//System.out.println(CloudSim.clock()+" : "+CloudSim.getEntityName(childId));
 								break;
 							}
+							System.out.println("-----------------------------------------------------------------");
 						}
 					}
 				}
-				
 			}
 			childResourceUsages.clear();
 		}
@@ -105,14 +102,14 @@ public class FogDeviceCollector extends FogDevice{
 		}
 		
 		double cpuLoad = canBeSentToCpuCollector(operators, childDeviceId, resourceUsageDetails, queryId, currentCpuLoad, currentNwLoad);
-		double nwLoad = canBeSentToNwCollector(operators, childDeviceId, resourceUsageDetails, queryId, currentCpuLoad, currentNwLoad);
+		String nwLoad = canBeSentToNwCollector(operators, childDeviceId, resourceUsageDetails, queryId, currentCpuLoad, currentNwLoad);
 		CanBeSentResult canBeSentResult = new CanBeSentResult();
-		canBeSentResult.setCpuLoad(cpuLoad);
-		canBeSentResult.setNwLoad(nwLoad);
-		if(cpuLoad < 0 || nwLoad < 0){
+		if(cpuLoad < 0 || nwLoad == null){
 			canBeSentResult.setCanBeSent(false);
 		}else{
 			canBeSentResult.setCanBeSent(true);
+			canBeSentResult.setCpuLoad(cpuLoad);
+			canBeSentResult.setNwLoad(Double.parseDouble(nwLoad));
 		}
 			 
 		return canBeSentResult;
@@ -128,23 +125,23 @@ public class FogDeviceCollector extends FogDevice{
 	 * @param currentNwLoad current NW load on this device
 	 * @return
 	 */
-	private double canBeSentToNwCollector(List<String> operators,
+	private String canBeSentToNwCollector(List<String> operators,
 			int childDeviceId, ResourceUsageDetails resourceUsageDetails,
 			String queryId, double currentCpuLoad, double currentNwLoad) {
 		Map<String, Double> outputRateMap = new HashMap<String, Double>();
 		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
 		
 		//CORRECTED double changeInNwLoad = resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth();
-		double changeInNwLoad = 0;
+		double changeInNwLoadForChild = 0;
 		
 		List<String> leaves = getSubtreeLeaves(operators, queryId);
 		for(String leaf : leaves){
 			double outputRate = 0;
 			for(String childOperator : streamQuery.getAllChildren(leaf)){
 				if(streamQuery.isSensor(childOperator))
-					changeInNwLoad -= getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleNwLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
+					changeInNwLoadForChild -= getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleNwLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
 				else
-					changeInNwLoad -= getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getOperatorByName(childOperator).getTupleFileLength();
+					changeInNwLoadForChild -= getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getOperatorByName(childOperator).getTupleFileLength();
 				//CORRECTED outputRateMap.put(leaf, streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
 				outputRate += streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId);
 			}
@@ -173,20 +170,39 @@ public class FogDeviceCollector extends FogDevice{
 		}
 		
 		for(String operator : getSubtreeApexes(operators, queryId)){
-			changeInNwLoad += outputRateMap.get(operator)*streamQuery.getOperatorByName(operator).getTupleFileLength();
+			changeInNwLoadForChild += outputRateMap.get(operator)*streamQuery.getOperatorByName(operator).getTupleFileLength();
+			// nw_load = output_rate * tuple_size; Here we calculate the change in network load involved in migrating the set of operators from the current device to the child device
 		}
 		
 		double finalNwLoadOnChild = resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth()
-				+ changeInNwLoad;
+				+ changeInNwLoadForChild;	//final network load on child device if the set of operators is migrated to it 
 		
 		if(finalNwLoadOnChild/resourceUsageDetails.getUplinkBandwidth() > 1)
-			return -1;
+			return null;	// migration is not possible if bandwidth gets saturated due to it
 		
-		/**
-		 * Need to add code for deciding whether to send operators down or not based on cost of running them
-		 */
 		
-		return 0;
+		List<List<String>> paths = getPathsInOperatorSubset(operators, queryId);
+		
+		double maxCostChildDevice = -1;
+		for(List<String> path : paths){
+			double pathCost = calculatePathNwCostOnChildDevice(path, queryId, childDeviceId, 
+					finalNwLoadOnChild, resourceUsageDetails.getUplinkBandwidth());
+			if(pathCost > maxCostChildDevice)
+				maxCostChildDevice = pathCost;
+		}
+		double maxCostCurrentDevice = -1;
+		for(List<String> path : paths){
+			double pathCost = calculatePathNwCostOnCurrentDevice(path, queryId, childDeviceId, 
+					resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth(), resourceUsageDetails.getUplinkBandwidth());
+			if(pathCost > maxCostCurrentDevice)
+				maxCostCurrentDevice = pathCost;
+		}
+		System.out.println(CloudSim.clock()+"\tNW Cost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
+		System.out.println(CloudSim.clock()+"\tNW Cost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
+		if(maxCostChildDevice < maxCostCurrentDevice)
+			return Double.toString(changeInNwLoadForChild);
+		else
+			return null;
 	}
 
 	/**
@@ -277,8 +293,8 @@ public class FogDeviceCollector extends FogDevice{
 				maxCostCurrentDevice = pathCost;
 		}
 		
-		System.out.println(CloudSim.clock()+"\tCost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
-		System.out.println(CloudSim.clock()+"\tCost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
+		System.out.println(CloudSim.clock()+"\tCPU Cost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
+		System.out.println(CloudSim.clock()+"\tCPU Cost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
 		
 		if(maxCostChildDevice < maxCostCurrentDevice)
 			return cpuLoad;
