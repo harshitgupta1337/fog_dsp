@@ -341,9 +341,8 @@ public class FogDevice extends Datacenter {
 		return true;
 	}
 	
-	protected double calculatePathCPUCostOnCurrentDevice(List<String> path, String queryId, int childDeviceId, double finalTrafficLoad, double mips){
+	protected double calculatePathCPUCostOnCurrentDevice(List<String> path, String queryId, int childDeviceId, double currentTrafficLoad, double mips){
 		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
-		
 		double cost = 0;
 		double inputRate = 0;
 		for(int i=0;i<path.size();i++){
@@ -351,7 +350,7 @@ public class FogDevice extends Datacenter {
 			if(i==0){
 				double maxCost = -1;
 				for(String childOperator : streamQuery.getAllChildren(operator)){// TAKING THE MAXIMUM COST AMONG ALL OPERATORS SENDING TUPLES TO THE PATH LEAF
-					double cost1 = finalTrafficLoad/(getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*mips);
+					double cost1 = currentTrafficLoad/(getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*mips);
 					if(cost1 > maxCost)
 						maxCost= cost1;
 					inputRate += streamQuery.getSelectivity(operator, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId);
@@ -359,7 +358,7 @@ public class FogDevice extends Datacenter {
 				cost += maxCost;
 			}else{
 				String prevOperator = path.get(i-1);
-				cost += finalTrafficLoad/(inputRate*mips);
+				cost += currentTrafficLoad/(inputRate*mips);
 				inputRate = inputRate*streamQuery.getSelectivity(operator, prevOperator);
 			}
 		}

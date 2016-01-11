@@ -32,7 +32,7 @@ import org.fog.utils.OperatorEdge;
 
 public class LargeSimulation {
 
-	static int sensorTupleCpuSize = 1000;
+	static int sensorTupleCpuSize = 100;
 	static int sensorTupleNwSize = 1000;
 	public static void main(String[] args) {
 
@@ -50,33 +50,20 @@ public class LargeSimulation {
 			
 			FogBroker broker = new FogBroker("broker");
 			
-			int transmitInterval = 100;
+			int transmitInterval = 50;
 
 			StreamQuery query = createStreamQuery(queryId, broker.getId(), transmitInterval);
 
 			List<FogDevice> fogDevices = createFogDevices(queryId, broker.getId(), transmitInterval);
 			
-			/*int sensorId = 0;
-			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
-				sensorId++;
-			}
-			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-1"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
-				sensorId++;
-			}
-			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-2"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
-				sensorId++;
-			}
-			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-3"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
-				sensorId++;
-			}*/
+			
 			for(int i=0;i<8;i++){
 				for(int j=0;j<8;j++){
 					int id = i*8+j;
-					createSensor("sensor-TYPE-"+i+"-"+j, query, broker.getId(), CloudSim.getEntityId("gateway-"+id), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+					createSensor("sensor-TYPE-"+i+"-"+j+"-0", query, broker.getId(), CloudSim.getEntityId("gateway-"+id), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+					createSensor("sensor-TYPE-"+i+"-"+j+"-1", query, broker.getId(), CloudSim.getEntityId("gateway-"+id), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+					createSensor("sensor-TYPE-"+i+"-"+j+"-2", query, broker.getId(), CloudSim.getEntityId("gateway-"+id), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+					createSensor("sensor-TYPE-"+i+"-"+j+"-3", query, broker.getId(), CloudSim.getEntityId("gateway-"+id), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
 				}
 			}
 
@@ -142,25 +129,8 @@ public class LargeSimulation {
 		level1Devices.get(14).setParentId(level2Devices.get(3).getId());
 		level1Devices.get(15).setParentId(level2Devices.get(3).getId());
 		
-		
-		/*final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100), 10000, 1);
-		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100), 10000, 1);
-		final FogDevice gw2 = createFogDevice("gateway-2", 1000, new GeoCoverage(-100, 0, -100, 0), 10000, 1);
-		final FogDevice gw3 = createFogDevice("gateway-3", 1000, new GeoCoverage(0, 100, -100, 0), 10000, 1);
-		*/
-		/*final FogDevice l1_02 = createFogDevice("level1-02", 1000, new GeoCoverage(-100, 0, -100, 100), 10000, 1);
-		final FogDevice l1_13 = createFogDevice("level1-13", 1000, new GeoCoverage(0, 100, -100, 100), 10000, 1);
-		*/
 		final FogDevice cloud = createFogDevice("cloud", FogUtils.MAX, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
 		for(FogDevice dev : level2Devices)dev.setParentId(cloud.getId());
-		
-		/*gw0.setParentId(l1_02.getId());
-		gw2.setParentId(l1_02.getId());
-		gw1.setParentId(l1_13.getId());
-		gw3.setParentId(l1_13.getId());
-		
-		l1_02.setParentId(cloud.getId());
-		l1_13.setParentId(cloud.getId());*/
 		
 		cloud.setParentId(-1);
 		
@@ -234,8 +204,8 @@ public class LargeSimulation {
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
-		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "TYPE", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 100, 100, 64/((double)transmitInterval));
-		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, null, queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 200, 200, 64/((double)transmitInterval));
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "TYPE", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 100, 100, 256/((double)transmitInterval));
+		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, null, queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 200, 200, 256/((double)transmitInterval));
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);add(bolt);}};
 		Map<String, String> edges = new HashMap<String, String>(){{put("spout", "bolt");}};
 		GeoCoverage geoCoverage = new GeoCoverage(0, 80, 0, 80);
