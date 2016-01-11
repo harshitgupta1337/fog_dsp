@@ -49,7 +49,7 @@ public class Sensor extends SimEntity{
 		tuple.setSensorType(getSensorType());
 		tuple.setActualTupleId(FogUtils.generateActualTupleId());
 		//System.out.println((CloudSim.clock()+delay)+" : Sensor "+getName()+" sending actual tuple id "+tuple.getActualTupleId());
-		
+		//System.out.println(CloudSim.getEntityName(gatewayDeviceId));
 		tuple.setDestOperatorId(getSpoutName());
 		tuple.setSrcOperatorId("sensor-"+getSensorType()+"-");
 		tuple.setEmitTime(CloudSim.clock()+delay);

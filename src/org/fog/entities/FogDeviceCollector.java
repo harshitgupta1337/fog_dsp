@@ -118,15 +118,90 @@ public class FogDeviceCollector extends FogDevice{
 		return canBeSentResult;
 	}
 	
+	/**
+	 * If the set of operators can be sent from this device to child device with id=childDeviceId taking only NW into account
+	 * @param operators set of operators in question
+	 * @param childDeviceId ID of the child device(potential target)
+	 * @param resourceUsageDetails resource statistics of the child device
+	 * @param queryId 
+	 * @param currentCpuLoad current CPU load on this device
+	 * @param currentNwLoad current NW load on this device
+	 * @return
+	 */
 	private double canBeSentToNwCollector(List<String> operators,
 			int childDeviceId, ResourceUsageDetails resourceUsageDetails,
 			String queryId, double currentCpuLoad, double currentNwLoad) {
-		// TODO Auto-generated method stub
+		Map<String, Double> outputRateMap = new HashMap<String, Double>();
+		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
+		
+		//CORRECTED double changeInNwLoad = resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth();
+		double changeInNwLoad = 0;
+		
+		List<String> leaves = getSubtreeLeaves(operators, queryId);
+		for(String leaf : leaves){
+			double outputRate = 0;
+			for(String childOperator : streamQuery.getAllChildren(leaf)){
+				if(streamQuery.isSensor(childOperator))
+					changeInNwLoad -= getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleNwLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
+				else
+					changeInNwLoad -= getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getOperatorByName(childOperator).getTupleFileLength();
+				//CORRECTED outputRateMap.put(leaf, streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
+				outputRate += streamQuery.getSelectivity(leaf, childOperator)*getInputRateByChildOperatorAndNode(childOperator, childDeviceId);
+			}
+			outputRateMap.put(leaf, outputRate);
+		}
+		
+		boolean done = false;	// denotes whether output rate of all operators has been calculated
+		while(!done){
+			done = true;
+			for(String operator : operators){
+				if(!outputRateMap.containsKey(operator)){
+					double outputRate = 0; boolean bool = true;
+					for(String child : getSubtreeChildren(operator, operators, queryId)){
+						if(!outputRateMap.containsKey(child)){
+							bool = false;
+							break;
+						}
+						outputRate += outputRateMap.get(child)*streamQuery.getSelectivity(operator, child);
+					}
+					if(bool){
+						outputRateMap.put(operator, outputRate);
+					}
+					done = false;
+				}
+			}
+		}
+		
+		for(String operator : getSubtreeApexes(operators, queryId)){
+			changeInNwLoad += outputRateMap.get(operator)*streamQuery.getOperatorByName(operator).getTupleFileLength();
+		}
+		
+		double finalNwLoadOnChild = resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth()
+				+ changeInNwLoad;
+		
+		if(finalNwLoadOnChild/resourceUsageDetails.getUplinkBandwidth() > 1)
+			return -1;
+		
+		/**
+		 * Need to add code for deciding whether to send operators down or not based on cost of running them
+		 */
+		
 		return 0;
 	}
 
+	/**
+	 * If the set of operators can be sent from this device to child device with id=childDeviceId taking only CPU into account
+	 * @param operators set of operators in question
+	 * @param childDeviceId ID of the child device(potential target)
+	 * @param resourceUsageDetails resource statistics of the child device
+	 * @param queryId 
+	 * @param currentCpuLoad current CPU load on this device
+	 * @param currentNwLoad current NW load on this device
+	 * @return
+	 */
 	protected double canBeSentToCpuCollector(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId
 			, double currentCpuLoad, double currentNwLoad){
+		//System.out.println("Current CPU load = "+currentCpuLoad);
 		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
 		double cpuLoad = 0;
 		Map<String, Double> outputRateMap = new HashMap<String, Double>();
@@ -135,7 +210,6 @@ public class FogDeviceCollector extends FogDevice{
 		for(String leaf : leaves){
 			// calculate the output rate of each leaf operator in the subtree
 			
-			//System.out.println("Children of "+leaf+" : "+streamQuery.getAllChildren(leaf));
 			double outputRate = 0;
 			for(String childOperator : streamQuery.getAllChildren(leaf)){
 				if(streamQuery.isSensor(childOperator))
@@ -203,8 +277,8 @@ public class FogDeviceCollector extends FogDevice{
 				maxCostCurrentDevice = pathCost;
 		}
 		
-		System.out.println("Cost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
-		System.out.println("Cost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
+		System.out.println(CloudSim.clock()+"\tCost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
+		System.out.println(CloudSim.clock()+"\tCost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
 		
 		if(maxCostChildDevice < maxCostCurrentDevice)
 			return cpuLoad;

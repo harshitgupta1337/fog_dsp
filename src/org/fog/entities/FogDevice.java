@@ -196,6 +196,24 @@ public class FogDevice extends Datacenter {
 		}
 	}
 	
+	protected List<String> getSubtreeApexes(List<String> operators, String queryId){
+		System.out.println("Operators : "+operators);
+		List<String> apexes =  new ArrayList<String>();
+		StreamQuery query = getStreamQueryMap().get(queryId);
+		for(String operator : operators){
+			boolean isApex = true;
+			for(String operator1 : operators){
+				/*System.out.println(operator1);
+				System.out.println(query.getEdges());*/
+				if(query.getEdges().get(operator)!=null && query.getEdges().get(operator).equals(operator1))
+					isApex = false;
+			}
+			if(isApex)
+				apexes.add(operator);
+		}
+		return apexes;
+	}
+	
 	protected List<String> getSubtreeLeaves(List<String> operators, String queryId){
 		List<String> leaves =  new ArrayList<String>();
 		StreamQuery query = getStreamQueryMap().get(queryId);
@@ -852,7 +870,6 @@ public class FogDevice extends Datacenter {
 		if(getName().equals("cloud")){
 			updateCloudTraffic();
 		}
-		
 		Tuple tuple = (Tuple)ev.getData();
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 		addChild(ev.getSource());
