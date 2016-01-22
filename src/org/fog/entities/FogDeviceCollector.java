@@ -20,6 +20,11 @@ import org.fog.utils.ResourceUsageDetails;
 
 public class FogDeviceCollector extends FogDevice{
 
+	private static boolean PRINTING_ENABLED = false;
+	private static void print(String msg){
+		if(PRINTING_ENABLED)System.out.println(CloudSim.clock()+" : "+msg);
+	}
+	
 	Map<Integer, ResourceUsageDetails> childResourceUsages;
 	
 	public FogDeviceCollector(String name, GeoCoverage geoCoverage,
@@ -45,7 +50,7 @@ public class FogDeviceCollector extends FogDevice{
 		ResourceUsageDetails resourceUsageDetails = (ResourceUsageDetails)ev.getData();
 		int childId1 = ev.getSource();
 		childResourceUsages.put(childId1, resourceUsageDetails);
-		
+		print(getName()+" : CPU load = "+calculateCpuLoad());
 		if(allChildrenDone()){
 			double currentCpuLoad = calculateCpuLoad()*getHost().getTotalMips();
 			double currentNwLoad = getTrafficIntensity()*getUplinkBandwidth();
@@ -71,10 +76,10 @@ public class FogDeviceCollector extends FogDevice{
 					
 					if(childIdsForQuery.contains(childId)){
 						for(List<String> set : sets){
-							System.out.println("-----------------------------------------------------------------");
+							print("-----------------------------------------------------------------");
 							CanBeSentResult canBeSentResult = canBeSentToCollector(set, childId, resourceUsageDetails, queryId, currentCpuLoad, currentNwLoad);
 							if(canBeSentResult.isCanBeSent()){
-								System.out.println("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
+								print("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
 								double newCpuLoad = resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips()+canBeSentResult.getCpuLoad();
 								resourceUsageDetails.setCpuTrafficIntensity(newCpuLoad/resourceUsageDetails.getMips());
 								double newNwLoad = resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth()+canBeSentResult.getNwLoad();
@@ -84,7 +89,7 @@ public class FogDeviceCollector extends FogDevice{
 								sendOperatorsToChild(queryId, set, childId);
 								break;
 							}
-							System.out.println("-----------------------------------------------------------------");
+							print("-----------------------------------------------------------------");
 						}
 					}
 				}
@@ -197,8 +202,8 @@ public class FogDeviceCollector extends FogDevice{
 			if(pathCost > maxCostCurrentDevice)
 				maxCostCurrentDevice = pathCost;
 		}
-		System.out.println(CloudSim.clock()+"\tNW Cost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
-		System.out.println(CloudSim.clock()+"\tNW Cost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
+		print(CloudSim.clock()+"\tNW Cost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
+		print(CloudSim.clock()+"\tNW Cost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
 		if(maxCostChildDevice < maxCostCurrentDevice)
 			return Double.toString(changeInNwLoadForChild);
 		else
@@ -217,7 +222,6 @@ public class FogDeviceCollector extends FogDevice{
 	 */
 	protected double canBeSentToCpuCollector(List<String> operators, int childDeviceId, ResourceUsageDetails resourceUsageDetails, String queryId
 			, double currentCpuLoad, double currentNwLoad){
-		//System.out.println("Current CPU load = "+currentCpuLoad);
 		StreamQuery streamQuery = getStreamQueryMap().get(queryId);
 		double cpuLoad = 0;
 		Map<String, Double> outputRateMap = new HashMap<String, Double>();
@@ -265,7 +269,7 @@ public class FogDeviceCollector extends FogDevice{
 		
 		// NOW, cpuLoad REPRESENTS THE LOAD ON CPU INCURRED BY operators IF THEY ARE MOVED TO childId
 		
-		//System.out.println(getName()+"\t"+CloudSim.getEntityName(childDeviceId)+"\t"+cpuLoad);
+		//print(getName()+"\t"+CloudSim.getEntityName(childDeviceId)+"\t"+cpuLoad);
 		
 		double finalTrafficIntensityOnChild = (cpuLoad+resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips())/resourceUsageDetails.getMips(); 
 		
@@ -293,8 +297,8 @@ public class FogDeviceCollector extends FogDevice{
 				maxCostCurrentDevice = pathCost;
 		}
 		
-		System.out.println(CloudSim.clock()+"\tCPU Cost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
-		System.out.println(CloudSim.clock()+"\tCPU Cost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
+		print("\tCPU Cost of running "+operators+" on "+getName()+" = "+maxCostCurrentDevice);
+		print("\tCPU Cost of running "+operators+" on "+CloudSim.getEntityName(childDeviceId)+" = "+maxCostChildDevice);
 		
 		if(maxCostChildDevice < maxCostCurrentDevice)
 			return cpuLoad;

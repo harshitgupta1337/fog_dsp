@@ -30,7 +30,7 @@ import org.fog.utils.FogUtils;
 import org.fog.utils.GeoCoverage;
 import org.fog.utils.OperatorEdge;
 
-public class FogAdaptiveTest {
+public class TwoQueries {
 
 	static int sensorTupleCpuSize = 1000;
 	static int sensorTupleNwSize = 1000;
@@ -46,36 +46,44 @@ public class FogAdaptiveTest {
 
 			CloudSim.init(num_user, calendar, trace_flag);
 
-			String queryId = "query";
+			String queryId1 = "query1";
+			String queryId2 = "query2";
 			
 			FogBroker broker = new FogBroker("broker");
 			
 			int transmitInterval = 100;
 
-			StreamQuery query = createStreamQuery(queryId, broker.getId(), transmitInterval);
+			StreamQuery query1 = createStreamQuery1(queryId1, broker.getId(), transmitInterval);
+			StreamQuery query2 = createStreamQuery2(queryId2, broker.getId(), transmitInterval);
 
-			List<FogDevice> fogDevices = createFogDevices(queryId, broker.getId(), transmitInterval);
-			
+			List<FogDevice> fogDevices = createFogDevices();
+			String srcOp1 = "spout1";
+			String srcOp2 = "spout2";
 			int sensorId = 0;
 			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+				createSensor("TYPE1", "sensor-TYPE1-"+sensorId, query1, broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp1);
+				createSensor("TYPE2", "sensor-TYPE2-"+sensorId, query2, broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp2);
 				sensorId++;
 			}
 			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-1"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+				createSensor("TYPE1", "sensor-TYPE1-"+sensorId, query1, broker.getId(), CloudSim.getEntityId("gateway-1"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp1);
+				createSensor("TYPE2", "sensor-TYPE2-"+sensorId, query2, broker.getId(), CloudSim.getEntityId("gateway-1"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp2);
 				sensorId++;
 			}
 			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-2"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+				createSensor("TYPE1", "sensor-TYPE1-"+sensorId, query1, broker.getId(), CloudSim.getEntityId("gateway-2"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp1);
+				createSensor("TYPE2", "sensor-TYPE2-"+sensorId, query2, broker.getId(), CloudSim.getEntityId("gateway-2"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp2);
 				sensorId++;
 			}
 			for(int i=0;i<2;i++){
-				createSensor("sensor-TYPE-"+sensorId, query, broker.getId(), CloudSim.getEntityId("gateway-3"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+				createSensor("TYPE1", "sensor-TYPE1-"+sensorId, query1, broker.getId(), CloudSim.getEntityId("gateway-3"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp1);
+				createSensor("TYPE2", "sensor-TYPE2-"+sensorId, query2, broker.getId(), CloudSim.getEntityId("gateway-3"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize, srcOp2);
 				sensorId++;
 			}
 
 			Controller controller = new Controller("master-controller", fogDevices);
-			controller.submitStreamQuery(query, 0);
+			controller.submitStreamQuery(query1, 0);
+			controller.submitStreamQuery(query2, 40000);
 			
 			CloudSim.startSimulation();
 
@@ -88,13 +96,13 @@ public class FogAdaptiveTest {
 		}
 	}
 
-	private static void createSensor(String sensorName, StreamQuery query, int userId, int parentId, int transmitInterval, int tupleCpuSize, int tupleNwSize){
-		Sensor sensor0 = new Sensor(sensorName, userId, query.getQueryId(), parentId, null, transmitInterval, tupleCpuSize, tupleNwSize, "TYPE", "spout");
+	private static void createSensor(String type, String sensorName, StreamQuery query, int userId, int parentId, int transmitInterval, int tupleCpuSize, int tupleNwSize, String srcOp){
+		Sensor sensor0 = new Sensor(sensorName, userId, query.getQueryId(), parentId, null, transmitInterval, tupleCpuSize, tupleNwSize, type, srcOp);
 		query.registerSensor(sensor0);
 		
 	}
 	
-	private static List<FogDevice> createFogDevices(String queryId, int userId, int transmitInterval) {
+	private static List<FogDevice> createFogDevices() {
 		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100), 10000, 1);
 		final FogDevice gw1 = createFogDevice("gateway-1", 1000, new GeoCoverage(0, 100, 0, 100), 10000, 1);
 		final FogDevice gw2 = createFogDevice("gateway-2", 1000, new GeoCoverage(-100, 0, -100, 0), 10000, 1);
@@ -178,18 +186,33 @@ public class FogAdaptiveTest {
 		return fogdevice;
 	}
 	
-	private static StreamQuery createStreamQuery(String queryId, int userId, int transmitInterval){
+	private static StreamQuery createStreamQuery1(String queryId, int userId, int transmitInterval){
 		int mips = 1;
 		long size = 10000; // image size (MB)
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
-		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "TYPE", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 100, 100, 4/((double)transmitInterval));
-		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, null, queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 200, 200, 4/((double)transmitInterval));
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout1", null, "TYPE1", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 100, 100, 4/((double)transmitInterval));
+		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt1", null, null, queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 200, 200, 4/((double)transmitInterval));
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);add(bolt);}};
-		Map<String, String> edges = new HashMap<String, String>(){{put("spout", "bolt");}};
+		Map<String, String> edges = new HashMap<String, String>(){{put("spout1", "bolt1");}};
 		GeoCoverage geoCoverage = new GeoCoverage(0, 100, -100, 100);
-		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor-TYPE-", "spout", 1));add(new OperatorEdge("spout", "bolt", 0.1));}};
+		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor-TYPE1-", "spout1", 1));add(new OperatorEdge("spout1", "bolt1", 0.1));}};
+		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage, operatorEdges);
+		return query;
+	}
+	private static StreamQuery createStreamQuery2(String queryId, int userId, int transmitInterval){
+		int mips = 1;
+		long size = 10000; // image size (MB)
+		int ram = 512; // vm memory (MB)
+		long bw = 1000;
+		String vmm = "Xen"; // VMM name
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout2", null, "TYPE2", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 100, 100, 4/((double)transmitInterval));
+		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt2", null, null, queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 200, 200, 4/((double)transmitInterval));
+		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);add(bolt);}};
+		Map<String, String> edges = new HashMap<String, String>(){{put("spout2", "bolt2");}};
+		GeoCoverage geoCoverage = new GeoCoverage(0, 100, -100, 100);
+		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor-TYPE2-", "spout2", 1));add(new OperatorEdge("spout2", "bolt2", 0.1));}};
 		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage, operatorEdges);
 		return query;
 	}

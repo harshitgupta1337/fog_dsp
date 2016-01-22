@@ -54,7 +54,7 @@ public class LargeSimulation {
 
 			StreamQuery query = createStreamQuery(queryId, broker.getId(), transmitInterval);
 
-			List<FogDevice> fogDevices = createFogDevices(queryId, broker.getId(), transmitInterval);
+			List<FogDevice> fogDevices = createFogDevices(broker.getId());
 			
 			
 			for(int i=0;i<8;i++){
@@ -68,7 +68,7 @@ public class LargeSimulation {
 			}
 
 			Controller controller = new Controller("master-controller", fogDevices);
-			controller.submitStreamQuery(query);
+			controller.submitStreamQuery(query, 0);
 			
 			CloudSim.startSimulation();
 
@@ -87,7 +87,7 @@ public class LargeSimulation {
 		
 	}
 	
-	private static List<FogDevice> createFogDevices(String queryId, int userId, int transmitInterval) {
+	private static List<FogDevice> createFogDevices(int userId) {
 		List<FogDevice> gws = new ArrayList<FogDevice>();
 		for(int i=0;i<8;i++){
 			for(int j=0;j<8;j++){
@@ -108,10 +108,10 @@ public class LargeSimulation {
 			}
 		}
 		List<FogDevice> level2Devices = new ArrayList<FogDevice>();
-		level2Devices.add(createFogDevice("level2-0", 10000, new GeoCoverage(0, 40, 0, 40), 1000, 1));
-		level2Devices.add(createFogDevice("level2-1", 10000, new GeoCoverage(0, 40, 40, 80), 1000, 1));
-		level2Devices.add(createFogDevice("level2-2", 10000, new GeoCoverage(40, 80, 0, 40), 1000, 1));
-		level2Devices.add(createFogDevice("level2-3", 10000, new GeoCoverage(40, 80, 40, 80), 1000, 1));
+		level2Devices.add(createFogDevice("level2-0", 10000, new GeoCoverage(0, 40, 0, 40), 10000, 1));
+		level2Devices.add(createFogDevice("level2-1", 10000, new GeoCoverage(0, 40, 40, 80), 10000, 1));
+		level2Devices.add(createFogDevice("level2-2", 10000, new GeoCoverage(40, 80, 0, 40), 10000, 1));
+		level2Devices.add(createFogDevice("level2-3", 10000, new GeoCoverage(40, 80, 40, 80), 10000, 1));
 		level1Devices.get(0).setParentId(level2Devices.get(0).getId());
 		level1Devices.get(1).setParentId(level2Devices.get(0).getId());
 		level1Devices.get(2).setParentId(level2Devices.get(1).getId());
@@ -129,7 +129,7 @@ public class LargeSimulation {
 		level1Devices.get(14).setParentId(level2Devices.get(3).getId());
 		level1Devices.get(15).setParentId(level2Devices.get(3).getId());
 		
-		final FogDevice cloud = createFogDevice("cloud", FogUtils.MAX, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
+		final FogDevice cloud = createFogDevice("cloud", FogUtils.MAX, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.00001, 10);
 		for(FogDevice dev : level2Devices)dev.setParentId(cloud.getId());
 		
 		cloud.setParentId(-1);
@@ -204,8 +204,8 @@ public class LargeSimulation {
 		int ram = 512; // vm memory (MB)
 		long bw = 1000;
 		String vmm = "Xen"; // VMM name
-		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "TYPE", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 100, 100, 256/((double)transmitInterval));
-		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, null, queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 200, 200, 256/((double)transmitInterval));
+		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), "spout", null, "TYPE", queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 10, 100, 256/((double)transmitInterval));
+		final StreamOperator bolt = new StreamOperator(FogUtils.generateEntityId(), "bolt", null, null, queryId, userId, mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 20, 200, 256/((double)transmitInterval));
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);add(bolt);}};
 		Map<String, String> edges = new HashMap<String, String>(){{put("spout", "bolt");}};
 		GeoCoverage geoCoverage = new GeoCoverage(0, 80, 0, 80);

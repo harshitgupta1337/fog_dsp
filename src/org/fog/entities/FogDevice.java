@@ -27,7 +27,10 @@ import org.fog.utils.ResourceUsageDetails;
 import org.fog.utils.TupleFinishDetails;
 
 public class FogDevice extends Datacenter {
-	
+	private static boolean PRINTING_ENABLED = false;
+	private static void print(String msg){
+		if(PRINTING_ENABLED)System.out.println(CloudSim.clock()+" : "+msg);
+	}
 	private static boolean ADAPTIVE_REPLACEMENT = true;
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 10;
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
@@ -197,7 +200,7 @@ public class FogDevice extends Datacenter {
 	}
 	
 	protected List<String> getSubtreeApexes(List<String> operators, String queryId){
-		System.out.println("Operators : "+operators);
+		print(getName()+"\tOperators : "+operators);
 		List<String> apexes =  new ArrayList<String>();
 		StreamQuery query = getStreamQueryMap().get(queryId);
 		for(String operator : operators){
@@ -792,6 +795,8 @@ public class FogDevice extends Datacenter {
 	
 	public double getInputRateByChildOperatorAndNode(String childOperator, int childNodeId){
 		Queue<Double> tupleInputTimes = inputTupleTimesByChildOperatorAndNode.get(new Pair<String, Integer>(childOperator, childNodeId));
+		if(tupleInputTimes==null)
+			return 0;
 		double lastTime = CloudSim.clock() - INPUT_RATE_TIME;
 		for(;;){
 			if(tupleInputTimes.size() == 0)
@@ -902,7 +907,6 @@ public class FogDevice extends Datacenter {
 		Tuple tuple = (Tuple)ev.getData();
 		send(ev.getSource(), CloudSim.getMinTimeBetweenEvents(), FogEvents.TUPLE_ACK);
 		addChild(ev.getSource());
-		
 		if(FogUtils.queryIdToGeoCoverageMap.containsKey(tuple.getQueryId())){
 			GeoCoverage geo = FogUtils.queryIdToGeoCoverageMap.get(tuple.getQueryId());
 			if(!(getGeoCoverage().covers(geo) || geo.covers(geoCoverage)))
@@ -938,11 +942,6 @@ public class FogDevice extends Datacenter {
 				if(vmId < 0){
 					return;
 				}
-				
-				
-				//System.out.println(CloudSim.clock()+" : Tuple ID " + tuple.getActualTupleId()+" received by "+getName()+" for operator "+tuple.getDestOperatorId());
-				//System.out.println(tuple.getActualTupleId()+" received by "+getName()+" for operator "+tuple.getDestOperatorId());
-				//System.out.print(getName());displayAllocatedMipsForOperators();System.out.println();
 				
 				tuple.setVmId(vmId);
 				updateInputTupleCount(ev.getSource(), tuple.getDestOperatorId());

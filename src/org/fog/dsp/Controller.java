@@ -27,12 +27,14 @@ public class Controller extends SimEntity{
 	private List<FogDevice> fogDevices;
 	
 	private Map<String, StreamQuery> queries;
+	private Map<String, Integer> queryLaunchDelays;
 	
 	private Map<String, Queue<Double>> tupleLatencyByQuery;
 
 	public Controller(String name, List<FogDevice> fogDevices) {
 		super(name);
 		this.queries = new HashMap<String, StreamQuery>();
+		this.setQueryLaunchDelays(new HashMap<String, Integer>());
 		for(FogDevice fogDevice : fogDevices){
 			fogDevice.setControllerId(getId());
 		}
@@ -45,7 +47,10 @@ public class Controller extends SimEntity{
 	public void startEntity() {
 		// TODO Auto-generated method stub
 		for(String queryId : queries.keySet()){
-			processQuerySubmit(queries.get(queryId));
+			if(getQueryLaunchDelays().get(queryId)==0)
+				processQuerySubmit(queries.get(queryId));
+			else
+				send(getId(), getQueryLaunchDelays().get(queryId), FogEvents.QUERY_SUBMIT, queries.get(queryId));
 		}
 
 		send(getId(), RESOURCE_MANAGE_INTERVAL, FogEvents.CONTROLLER_RESOURCE_MANAGE);
@@ -86,11 +91,11 @@ public class Controller extends SimEntity{
 	}
 	
 	protected void manageResources(){
-		for(String queryId : getQueries().keySet()){
+		/*for(String queryId : getQueries().keySet()){
 			if(queryNeedsHelp(queryId)){
 				helpQuery(queryId);
 			}				
-		}
+		}*/
 		send(getId(), RESOURCE_MANAGE_INTERVAL, FogEvents.CONTROLLER_RESOURCE_MANAGE);
 	}
 	
@@ -101,7 +106,7 @@ public class Controller extends SimEntity{
 			getTupleLatencyByQuery().get(details.getQueryId()).remove();
 		getTupleLatencyByQuery().get(details.getQueryId()).add(latency);
 		TupleEmitTimes.setLatency(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
-		//System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
+		System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
 	}
 
 	@Override
@@ -109,11 +114,11 @@ public class Controller extends SimEntity{
 		// TODO Auto-generated method stub
 		
 	}
-
-	public void submitStreamQuery(StreamQuery streamQuery){
-		//processQuerySubmit(streamQuery);
+	
+	public void submitStreamQuery(StreamQuery streamQuery, int delay){
 		FogUtils.queryIdToGeoCoverageMap.put(streamQuery.getQueryId(), streamQuery.getGeoCoverage());
 		getQueries().put(streamQuery.getQueryId(), streamQuery);
+		getQueryLaunchDelays().put(streamQuery.getQueryId(), delay);
 	}
 	
 	private void processQuerySubmit(SimEvent ev){
@@ -122,7 +127,8 @@ public class Controller extends SimEntity{
 	}
 	
 	private void processQuerySubmit(StreamQuery query){
-		//System.out.println("Submitted query");
+		System.out.println(CloudSim.clock()+" Submitted query "+query.getQueryId());
+		FogUtils.queryIdToGeoCoverageMap.put(query.getQueryId(), query.getGeoCoverage());
 		getQueries().put(query.getQueryId(), query);
 		getTupleLatencyByQuery().put(query.getQueryId(), new LinkedList<Double>());
 		Map<String, Integer> allocationMap = (new OperatorPlacementBruteForce(fogDevices, query)).getOperatorToDeviceMap();
@@ -171,5 +177,13 @@ public class Controller extends SimEntity{
 
 	public void setQueries(Map<String, StreamQuery> queries) {
 		this.queries = queries;
+	}
+
+	public Map<String, Integer> getQueryLaunchDelays() {
+		return queryLaunchDelays;
+	}
+
+	public void setQueryLaunchDelays(Map<String, Integer> queryLaunchDelays) {
+		this.queryLaunchDelays = queryLaunchDelays;
 	}
 }
