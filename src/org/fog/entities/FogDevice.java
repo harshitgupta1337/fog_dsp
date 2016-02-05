@@ -31,7 +31,7 @@ public class FogDevice extends Datacenter {
 	private static void print(String msg){
 		if(PRINTING_ENABLED)System.out.println(CloudSim.clock()+" : "+msg);
 	}
-	private static boolean ADAPTIVE_REPLACEMENT = true;
+	private static boolean ADAPTIVE_REPLACEMENT = false;
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 10;
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
 	private static double INPUT_RATE_TIME = 1000;

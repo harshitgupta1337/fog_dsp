@@ -22,6 +22,8 @@ public class Controller extends SimEntity{
 	public static double RESOURCE_MANAGE_INTERVAL = 100;
 	public static double LATENCY_WINDOW = 1000;
 	
+	public static boolean ONLY_CLOUD = true;
+	
 	private OperatorPlacement operatorPlacement;
 	
 	private List<FogDevice> fogDevices;
@@ -131,7 +133,14 @@ public class Controller extends SimEntity{
 		FogUtils.queryIdToGeoCoverageMap.put(query.getQueryId(), query.getGeoCoverage());
 		getQueries().put(query.getQueryId(), query);
 		getTupleLatencyByQuery().put(query.getQueryId(), new LinkedList<Double>());
-		Map<String, Integer> allocationMap = (new OperatorPlacementBruteForce(fogDevices, query)).getOperatorToDeviceMap();
+		
+		
+		Map<String, Integer> allocationMap = null;
+		if(ONLY_CLOUD)
+			allocationMap = (new OperatorPlacementOnlyCloud(fogDevices, query)).getOperatorToDeviceMap();
+		else
+			allocationMap = (new OperatorPlacementBruteForce(fogDevices, query)).getOperatorToDeviceMap();
+		
 		for(FogDevice fogDevice : fogDevices){
 			sendNow(fogDevice.getId(), FogEvents.ACTIVE_QUERY_UPDATE, query);
 		}
