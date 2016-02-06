@@ -31,7 +31,7 @@ public class FogDevice extends Datacenter {
 	private static void print(String msg){
 		if(PRINTING_ENABLED)System.out.println(CloudSim.clock()+" : "+msg);
 	}
-	private static boolean ADAPTIVE_REPLACEMENT = false;
+	private static boolean ADAPTIVE_REPLACEMENT = true;
 	private static double RESOURCE_USAGE_COLLECTION_INTERVAL = 10;
 	private static double RESOURCE_USAGE_VECTOR_SIZE = 100;
 	private static double INPUT_RATE_TIME = 1000;
@@ -376,6 +376,11 @@ public class FogDevice extends Datacenter {
 		double maxCost = -1;
 		for(String childOperator : streamQuery.getAllChildren(operator)){// TAKING THE MAXIMUM COST AMONG ALL OPERATORS SENDING TUPLES TO THE PATH LEAF
 			double cost = currentNwLoadOnChild/(getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*childBw);
+			
+			System.out.println("Calculating path nw cost on current device");
+			System.out.println("currentNwLoadOnChild = "+currentNwLoadOnChild);
+			System.out.println("InputRateByChildOperatorAndNode = "+getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
+			
 			if(cost > maxCost)
 				maxCost= cost;
 		}
@@ -395,6 +400,10 @@ public class FogDevice extends Datacenter {
 				outputRate = outputRate*streamQuery.getSelectivity(operator, prevOperator);
 			}
 		}
+		
+		System.out.println("Calculating path nw cost on child device");
+		System.out.println("finalNwLoadOnChild = "+finalTrafficLoadOnChild);
+		System.out.println("outputRate = "+outputRate);
 		
 		return finalTrafficLoadOnChild/(outputRate*childBw);
 	}
@@ -439,7 +448,6 @@ public class FogDevice extends Datacenter {
 	 * @param ev
 	 */
 	protected void processResourceUsage(SimEvent ev) {
-
 		/*for(Pair<String, Integer> pair : getInputTupleTimesByChildOperatorAndNode().keySet()){
 			System.out.println(pair.getFirst()+"\t"+CloudSim.getEntityName(pair.getSecond())+"\t---->\t"+getInputRateByChildOperatorAndNode(pair.getFirst(), pair.getSecond()));
 		}*/

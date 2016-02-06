@@ -20,7 +20,7 @@ import org.fog.utils.ResourceUsageDetails;
 
 public class FogDeviceCollector extends FogDevice{
 
-	private static boolean PRINTING_ENABLED = false;
+	private static boolean PRINTING_ENABLED = true;
 	private static void print(String msg){
 		if(PRINTING_ENABLED)System.out.println(CloudSim.clock()+" : "+msg);
 	}
@@ -143,6 +143,7 @@ public class FogDeviceCollector extends FogDevice{
 		for(String leaf : leaves){
 			double outputRate = 0;
 			for(String childOperator : streamQuery.getAllChildren(leaf)){
+				//print("Input rate by child operator "+childOperator+" from child device "+CloudSim.getEntityName(childDeviceId)+" = "+getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
 				if(streamQuery.isSensor(childOperator))
 					changeInNwLoadForChild -= getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*streamQuery.getTupleNwLengthOfSensor(FogUtils.getSensorTypeFromSensorName(childOperator));
 				else
@@ -187,6 +188,9 @@ public class FogDeviceCollector extends FogDevice{
 		
 		
 		List<List<String>> paths = getPathsInOperatorSubset(operators, queryId);
+		
+		print("Current network load on child = "+resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth());
+		print("Final network load on child = "+finalNwLoadOnChild);
 		
 		double maxCostChildDevice = -1;
 		for(List<String> path : paths){

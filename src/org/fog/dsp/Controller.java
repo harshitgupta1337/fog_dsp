@@ -22,7 +22,7 @@ public class Controller extends SimEntity{
 	public static double RESOURCE_MANAGE_INTERVAL = 100;
 	public static double LATENCY_WINDOW = 1000;
 	
-	public static boolean ONLY_CLOUD = true;
+	public static boolean ONLY_CLOUD = false;
 	
 	private OperatorPlacement operatorPlacement;
 	
@@ -108,7 +108,13 @@ public class Controller extends SimEntity{
 			getTupleLatencyByQuery().get(details.getQueryId()).remove();
 		getTupleLatencyByQuery().get(details.getQueryId()).add(latency);
 		TupleEmitTimes.setLatency(details.getQueryId(), details.getActualTupleId(), details.getFinishTime()-details.getEmitTime());
-		System.out.println(details.getSensorType()+" : "+details.getActualTupleId()+"\t---->\t"+latency);
+		//displayTupleDetails(details);
+	}
+	
+	private void displayTupleDetails(TupleFinishDetails details){
+			String sensorType = details.getSensorType(); 
+			if(sensorType.equals("TYPE0"))
+				System.out.println(sensorType+" : "+details.getActualTupleId()+"\t---->\t"+(details.getFinishTime()-details.getEmitTime()));
 	}
 
 	@Override
