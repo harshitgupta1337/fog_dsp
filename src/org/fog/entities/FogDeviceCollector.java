@@ -20,7 +20,8 @@ import org.fog.utils.ResourceUsageDetails;
 
 public class FogDeviceCollector extends FogDevice{
 
-	private static boolean PRINTING_ENABLED = true;
+	private static boolean PRINTING_ENABLED = false;
+	private static boolean CONSIDER_COSTS = false;
 	private static void print(String msg){
 		if(PRINTING_ENABLED)System.out.println(CloudSim.clock()+" : "+msg);
 	}
@@ -73,13 +74,12 @@ public class FogDeviceCollector extends FogDevice{
 					List<List<String>> sets = generateSets(queryId, map);
 					Collections.sort(sets, new OperatorSetComparator());
 					List<Integer> childIdsForQuery = childIdsForQuery(queryId);
-					
 					if(childIdsForQuery.contains(childId)){
 						for(List<String> set : sets){
 							print("-----------------------------------------------------------------");
 							CanBeSentResult canBeSentResult = canBeSentToCollector(set, childId, resourceUsageDetails, queryId, currentCpuLoad, currentNwLoad);
 							if(canBeSentResult.isCanBeSent()){
-								print("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
+								System.out.println("SENDING "+set+" FROM "+getName()+" TO "+CloudSim.getEntityName(childId));
 								double newCpuLoad = resourceUsageDetails.getCpuTrafficIntensity()*resourceUsageDetails.getMips()+canBeSentResult.getCpuLoad();
 								resourceUsageDetails.setCpuTrafficIntensity(newCpuLoad/resourceUsageDetails.getMips());
 								double newNwLoad = resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth()+canBeSentResult.getNwLoad();
@@ -187,6 +187,9 @@ public class FogDeviceCollector extends FogDevice{
 			return null;	// migration is not possible if bandwidth gets saturated due to it
 		
 		
+		if(!CONSIDER_COSTS)
+			return Double.toString(changeInNwLoadForChild);
+		
 		List<List<String>> paths = getPathsInOperatorSubset(operators, queryId);
 		
 		print("Current network load on child = "+resourceUsageDetails.getNwTrafficIntensity()*resourceUsageDetails.getUplinkBandwidth());
@@ -279,6 +282,9 @@ public class FogDeviceCollector extends FogDevice{
 		
 		if(finalTrafficIntensityOnChild > 1)
 			return -1;
+		
+		if(!CONSIDER_COSTS)
+			return cpuLoad;
 		
 		// NOW CALCULATING THE COST OF RUNNING THE SUBSET OF OPERATORS ON CHOSEN CHILD DEVICE
 		

@@ -50,28 +50,28 @@ public class FogDevice extends Datacenter {
 	
 	private Map<Pair<String, Integer>, Queue<Double>> inputTupleTimesByChildOperatorAndNode;
 	
-	private Queue<Double> outputTupleTimes;
-	private Map<String, Queue<Double>> outputTupleTimesByOperator;
-	private Map<String, Queue<Double>> intermediateTupleTimesByOperator;
+	protected Queue<Double> outputTupleTimes;
+	protected Map<String, Queue<Double>> outputTupleTimesByOperator;
+	protected Map<String, Queue<Double>> intermediateTupleTimesByOperator;
 	
-	private Map<Pair<String, String>, Double> inputRateByChildOperator;
-	private Map<Pair<String, String>, Integer> inputTuplesByChildOperator;
-	private Map<Pair<String, String>, Double> tupleLengthByChildOperator;
-	private Map<Pair<String, String>, Double> tupleCountsByChildOperator;
-	private Map<String, Double> outputTupleLengthsByOperator;
+	protected Map<Pair<String, String>, Double> inputRateByChildOperator;
+	protected Map<Pair<String, String>, Integer> inputTuplesByChildOperator;
+	protected Map<Pair<String, String>, Double> tupleLengthByChildOperator;
+	protected Map<Pair<String, String>, Double> tupleCountsByChildOperator;
+	protected Map<String, Double> outputTupleLengthsByOperator;
 	
-	private Map<Pair<String, Integer>, Queue<Double>> inputTupleTimes;
-	private Map<Pair<String, String>, Queue<Double>> inputTupleTimesByChildOperator;
-	private Map<String, Queue<Double>> utilization; 
+	protected Map<Pair<String, Integer>, Queue<Double>> inputTupleTimes;
+	protected Map<Pair<String, String>, Queue<Double>> inputTupleTimesByChildOperator;
+	protected Map<String, Queue<Double>> utilization; 
 	
-	private Map<Integer, Integer> cloudTrafficMap;
+	protected Map<Integer, Integer> cloudTrafficMap;
 	
-	private double lockTime;
+	protected double lockTime;
 	
 	/**	
 	 * ID of the parent Fog Device
 	 */
-	private int parentId;
+	protected int parentId;
 	
 	/**
 	 * ID of the Controller
@@ -376,11 +376,11 @@ public class FogDevice extends Datacenter {
 		double maxCost = -1;
 		for(String childOperator : streamQuery.getAllChildren(operator)){// TAKING THE MAXIMUM COST AMONG ALL OPERATORS SENDING TUPLES TO THE PATH LEAF
 			double cost = currentNwLoadOnChild/(getInputRateByChildOperatorAndNode(childOperator, childDeviceId)*childBw);
-			
+			/*
 			System.out.println("Calculating path nw cost on current device");
 			System.out.println("currentNwLoadOnChild = "+currentNwLoadOnChild);
 			System.out.println("InputRateByChildOperatorAndNode = "+getInputRateByChildOperatorAndNode(childOperator, childDeviceId));
-			
+			*/
 			if(cost > maxCost)
 				maxCost= cost;
 		}
@@ -400,11 +400,11 @@ public class FogDevice extends Datacenter {
 				outputRate = outputRate*streamQuery.getSelectivity(operator, prevOperator);
 			}
 		}
-		
+		/*
 		System.out.println("Calculating path nw cost on child device");
 		System.out.println("finalNwLoadOnChild = "+finalTrafficLoadOnChild);
 		System.out.println("outputRate = "+outputRate);
-		
+		*/
 		return finalTrafficLoadOnChild/(outputRate*childBw);
 	}
 	
@@ -1039,7 +1039,7 @@ public class FogDevice extends Datacenter {
 		}
 	}
 	
-	private void sendUpFreeLink(Tuple tuple){
+	protected void sendUpFreeLink(Tuple tuple){
 		//System.out.println(CloudSim.clock()+"\tSending tuple ID "+tuple.getActualTupleId()+" from "+getName());
 		//System.out.println(CloudSim.clock()+" : Tuple ID " + tuple.getActualTupleId()+" being sent up FREE LINK.");
 		double networkDelay = tuple.getCloudletFileSize()/getUplinkBandwidth();
@@ -1069,7 +1069,7 @@ public class FogDevice extends Datacenter {
 		}
 	}
 	
-	private void sendUp(Tuple tuple){
+	protected void sendUp(Tuple tuple){
 		//System.out.println(CloudSim.clock()+" : Tuple ID " + tuple.getActualTupleId()+" being sent up.");
 		if(getActiveQueries().contains(tuple.getQueryId())){
 			outputTupleTimes.add(CloudSim.clock());
