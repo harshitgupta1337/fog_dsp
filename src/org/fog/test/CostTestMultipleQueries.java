@@ -20,7 +20,6 @@ import org.fog.dsp.StreamQuery;
 import org.fog.entities.FogBroker;
 import org.fog.entities.FogDevice;
 import org.fog.entities.FogDeviceCharacteristics;
-import org.fog.entities.FogDeviceCollector;
 import org.fog.entities.FogDeviceNoNetworkDelay;
 import org.fog.entities.Sensor;
 import org.fog.entities.StreamOperator;
@@ -33,8 +32,10 @@ import org.fog.utils.OperatorEdge;
 
 public class CostTestMultipleQueries {
 	static int numQueries = 2;
-	static int sensorTupleCpuSize[] = {100, 50};
-	static int sensorTupleNwSize[] = {100, 1000};
+	static int sensorTupleCpuSize[] = {100, 100};
+	static int transmitInterval[] = {20, 20};
+	
+	static int sensorTupleNwSize[] = {100, 100};
 	public static void main(String[] args) {
 
 		Log.printLine("Starting FogTest...");
@@ -48,12 +49,10 @@ public class CostTestMultipleQueries {
 			CloudSim.init(num_user, calendar, trace_flag);
 			
 			FogBroker broker = new FogBroker("broker");
-			
-			int transmitInterval = 50;
 
 			List<StreamQuery> queries = new ArrayList<StreamQuery>();
 			for(int i=0;i<numQueries;i++){
-				StreamQuery query = createStreamQuery(i, broker.getId(), transmitInterval);
+				StreamQuery query = createStreamQuery(i, broker.getId(), transmitInterval[i]);
 				queries.add(query);
 			}
 
@@ -61,7 +60,7 @@ public class CostTestMultipleQueries {
 			
 			for(int i=0;i<4;i++){
 				for(int k=0;k<numQueries;k++){
-					createSensor(k, "sensor-TYPE"+k+"-"+i, queries.get(k), broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize[k], sensorTupleNwSize[k]);
+					createSensor(k, "sensor-TYPE"+k+"-"+i, queries.get(k), broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval[k], sensorTupleCpuSize[k], sensorTupleNwSize[k]);
 				}
 			}
 

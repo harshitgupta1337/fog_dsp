@@ -113,7 +113,7 @@ public class Controller extends SimEntity{
 	
 	private void displayTupleDetails(TupleFinishDetails details){
 		String sensorType = details.getSensorType(); 
-		if(sensorType.equals("TYPE0"))
+		if(sensorType.equals("TYPE1"))
 			System.out.println(sensorType+" : "+details.getActualTupleId()+"\t---->\t"+(details.getFinishTime()-details.getEmitTime()));
 	}
 
@@ -153,9 +153,7 @@ public class Controller extends SimEntity{
 		
 		for(String operatorName : allocationMap.keySet()){
 			StreamOperator operator = query.getOperatorByName(operatorName);
-			//System.out.println("Operator "+operator.getName()+" has been placed on "+allocationMap.get(operatorName));
-			//System.out.println(CloudSim.getEntityName(allocationMap.get(operatorName)));
-
+			
 			sendNow(allocationMap.get(operatorName), FogEvents.QUERY_SUBMIT, query);
 			
 			sendNow(allocationMap.get(operatorName), FogEvents.LAUNCH_OPERATOR, operator);
