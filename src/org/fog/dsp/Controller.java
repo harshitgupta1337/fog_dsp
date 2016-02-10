@@ -113,7 +113,7 @@ public class Controller extends SimEntity{
 	
 	private void displayTupleDetails(TupleFinishDetails details){
 		String sensorType = details.getSensorType(); 
-		if(sensorType.equals("TYPE1"))
+		if(sensorType.equals("TYPE0"))
 			System.out.println(sensorType+" : "+details.getActualTupleId()+"\t---->\t"+(details.getFinishTime()-details.getEmitTime()));
 	}
 

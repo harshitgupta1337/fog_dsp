@@ -33,8 +33,8 @@ import org.fog.utils.OperatorEdge;
 
 public class CostTestMultipleQueries {
 	static int numQueries = 2;
-	static int sensorTupleCpuSize = 100;
-	static int sensorTupleNwSize = 1000;
+	static int sensorTupleCpuSize[] = {100, 50};
+	static int sensorTupleNwSize[] = {100, 1000};
 	public static void main(String[] args) {
 
 		Log.printLine("Starting FogTest...");
@@ -59,17 +59,16 @@ public class CostTestMultipleQueries {
 
 			List<FogDevice> fogDevices = createFogDevices(broker.getId());
 			
-			
 			for(int i=0;i<4;i++){
 				for(int k=0;k<numQueries;k++){
-					createSensor(k, "sensor-TYPE"+k+"-"+i, queries.get(k), broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize, sensorTupleNwSize);
+					createSensor(k, "sensor-TYPE"+k+"-"+i, queries.get(k), broker.getId(), CloudSim.getEntityId("gateway-0"), transmitInterval, sensorTupleCpuSize[k], sensorTupleNwSize[k]);
 				}
 			}
 
 			Controller controller = new Controller("master-controller", fogDevices);
 			
 			for(int i=0;i<numQueries;i++)
-				controller.submitStreamQuery(queries.get(i), 10000*i);
+				controller.submitStreamQuery(queries.get(i), 30000*i);
 			
 			CloudSim.startSimulation();
 
@@ -89,7 +88,7 @@ public class CostTestMultipleQueries {
 	}
 	
 	private static List<FogDevice> createFogDevices(int userId) {
-		final FogDevice gw0 = createFogDevice("gateway-0", 1000, new GeoCoverage(-100, 0, 0, 100), 10000, 1);
+		final FogDevice gw0 = createFogDevice("gateway-0", 100, new GeoCoverage(-100, 0, 0, 100), 10000, 1);
 		final FogDevice cloud = createFogDevice("cloud", FogUtils.MAX, new GeoCoverage(-FogUtils.MAX, FogUtils.MAX, -FogUtils.MAX, FogUtils.MAX), 0.01, 10);
 		
 		gw0.setParentId(cloud.getId());
@@ -162,18 +161,17 @@ public class CostTestMultipleQueries {
 	private static StreamQuery createStreamQuery(final int queryIndex, int userId, int transmitInterval){
 		String queryId = "query-"+queryIndex;
 		final String spoutName = "spout"+queryIndex;
-		final String boltName = "bolt"+queryIndex;
 		int mips = 1;
 		long size = 10000; // image size (MB)
 		int ram = 5; // vm memory (MB)
 		long bw = 1;
 		String vmm = "Xen"; // VMM name
 		final StreamOperator spout = new StreamOperator(FogUtils.generateEntityId(), spoutName, null, "TYPE"+queryIndex, queryId, userId, 
-				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, 10, 200, 4/((double)transmitInterval));
+				mips, ram, bw, size, vmm, new TupleScheduler(mips, 1), 1, 1, sensorTupleCpuSize[queryIndex], sensorTupleNwSize[queryIndex], 4/((double)transmitInterval));
 		List<StreamOperator> operators = new ArrayList<StreamOperator>(){{add(spout);}};
 		Map<String, String> edges = new HashMap<String, String>();
 		GeoCoverage geoCoverage = new GeoCoverage(-100, 100, -100, 100);
-		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor-TYPE"+queryIndex+"-", spoutName, 0.1));}};
+		List<OperatorEdge> operatorEdges = new ArrayList<OperatorEdge>(){{add(new OperatorEdge("sensor-TYPE"+queryIndex+"-", spoutName, 1));}};
 		StreamQuery query = new StreamQuery(queryId, operators, edges, geoCoverage, operatorEdges);
 		return query;
 	}
